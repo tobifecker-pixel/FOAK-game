@@ -1,0 +1,1568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="An 8-bit game about financing first-of-a-kind climate plants. Pick the right capital at the right moment across 5 sectors and 5 regions, negotiate with lenders, and collect 24 instrument cards. Built on public FOAK research.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="First of a Kind: an 8-bit FOAK financing game">
+<meta property="og:description" content="An 8-bit game about financing first-of-a-kind climate plants. Pick the right capital at the right moment across 5 sectors and 5 regions, negotiate with lenders, and collect 24 instrument cards. Built on public FOAK research.">
+<meta property="og:url" content="https://YOUR-SITE-URL/">
+<meta property="og:image" content="https://YOUR-SITE-URL/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Pixel-art title card for First of a Kind, with a lab, shovel, factory, bank, money bag and trophy">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>First of a Kind</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<style>
+/* Layout: a single deal-room column. Ledger strip on top, narrative + choice cards below, capital stack as a text bar. */
+:root{
+  --paper:#F3F5F8; --card:#FFFFFF; --ink:#131922; --muted:#5A6472; --line:#D7DCE4;
+  --accent:#2347C5; --accent-soft:#E6ECFB; --good:#1C7A4D; --good-soft:#E3F3EA; --warn:#9A6200; --warn-soft:#FBF0DB; --bad:#B0281F; --bad-soft:#FBE7E5;
+  --violet:#6B43B8;
+  --f-story:"Newsreader", Georgia, "Times New Roman", serif;
+  --f-ui:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E1217; --card:#161B22; --ink:#E5E9EF; --muted:#94A0AE; --line:#29303A;
+  --accent:#829DFF; --accent-soft:#1C2540; --good:#53C68E; --good-soft:#132A20; --warn:#E6A93E; --warn-soft:#2E2412; --bad:#F27B70; --bad-soft:#341815; --violet:#A98BF0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E1217; --card:#161B22; --ink:#E5E9EF; --muted:#94A0AE; --line:#29303A;
+  --accent:#829DFF; --accent-soft:#1C2540; --good:#53C68E; --good-soft:#132A20; --warn:#E6A93E; --warn-soft:#2E2412; --bad:#F27B70; --bad-soft:#341815; --violet:#A98BF0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-story);font-size:18px;line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+.mono,.ledger,.btn,.chip,.card .meta,.eyebrow,.bar-legend,.stat{font-family:var(--f-ui)}
+h1,h2{font-family:var(--f-story);font-weight:600;text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(34px,7vw,52px);letter-spacing:-.01em}
+h2{font-size:26px}
+p{margin:0;max-width:65ch}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.ledger{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line);padding:10px 0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.ledger b{font-weight:600}
+.ledger .k{color:var(--muted)}
+.steps{display:flex;gap:4px;width:100%}
+.steps span{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.steps span.done{background:var(--accent)}
+.steps span.now{background:var(--accent);opacity:.45}
+.story{display:flex;flex-direction:column;gap:12px}
+.note{border-left:3px solid var(--accent);padding:2px 0 2px 14px;color:var(--muted);font-size:16px}
+.real{background:var(--accent-soft);border-radius:6px;padding:12px 14px;font-size:16px}
+.real .eyebrow{color:var(--accent);margin-bottom:4px}
+.need{display:flex;flex-direction:column;gap:8px}
+.bar{display:flex;height:26px;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--card)}
+.bar div{height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--f-ui);font-size:11px;color:#fff;white-space:nowrap;overflow:hidden;min-width:0}
+.bar-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted)}
+.bar-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.cards{display:grid;grid-template-columns:1fr;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;text-align:left;color:inherit;font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:6px;width:100%;transition:border-color .15s, transform .15s}
+.card:hover:not([disabled]){border-color:var(--accent)}
+.card:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card[disabled]{cursor:default}
+.card .t{font-weight:600;font-size:18px;line-height:1.3}
+.card .meta{font-size:12.5px;color:var(--muted);line-height:1.5}
+.card.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.card.res-good{border-color:var(--good);background:var(--good-soft)}
+.card.res-ok{border-color:var(--warn);background:var(--warn-soft)}
+.card.res-bad{border-color:var(--bad);background:var(--bad-soft);opacity:.85}
+.card.res-neutral{border-color:var(--line);opacity:.9}
+.chip{display:inline-block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:3px;font-weight:600;align-self:flex-start}
+.chip.good{background:var(--good);color:var(--card)}
+.chip.ok{background:var(--warn);color:var(--card)}
+.chip.bad{background:var(--bad);color:var(--card)}
+.chip.neutral{background:var(--line);color:var(--ink)}
+.lesson{font-size:16px}
+.src{font-family:var(--f-ui);font-size:11.5px;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font-size:14px;padding:11px 18px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:var(--card);cursor:pointer;font-weight:600}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.feedback{border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);background:var(--card)}
+.feedback.good{border-color:var(--good)} .feedback.ok{border-color:var(--warn)} .feedback.bad{border-color:var(--bad)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.stat .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.debrief{display:flex;flex-direction:column;gap:10px}
+.dline{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.dline .lbl{font-weight:600;font-size:16px;line-height:1.35}
+.dline .stage{font-family:var(--f-ui);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.dline > div{min-width:0}
+.err{color:var(--bad);font-family:var(--f-ui);font-size:13px}
+.sources{font-size:14px;color:var(--muted)}
+.sources li{margin-bottom:4px}
+.hearts{letter-spacing:2px}
+hr{border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
+@media (min-width:640px){.cards.two{grid-template-columns:1fr 1fr}}
+/* Two-column play layout: main story left, field guide right */
+.wrap.play{max-width:1140px}
+.cols{display:flex;flex-direction:column;gap:20px}
+.main{display:flex;flex-direction:column;gap:20px;min-width:0}
+.guide{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:0}
+.guide summary{cursor:pointer;padding:12px 16px;font-family:var(--f-ui);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);list-style:none;display:flex;justify-content:space-between}
+.guide summary::-webkit-details-marker{display:none}
+.guide summary::after{content:"+";font-size:16px;line-height:1}
+.guide[open] summary::after{content:"–"}
+.guide .gbody{padding:0 16px 16px;display:flex;flex-direction:column;gap:14px}
+.gitem h3{font-family:var(--f-ui);font-size:13px;font-weight:600;margin:0 0 3px;letter-spacing:.01em}
+.gitem p{font-size:15px;line-height:1.5}
+.gitem .src{display:block;margin-top:3px}
+@media (min-width:1000px){
+  .cols{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:36px;align-items:start}
+  .guide{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px);max-height:calc(100vh - 100px);overflow:auto}
+}
+/* Conversations */
+.convo{display:flex;flex-direction:column;gap:10px}
+.msg{display:flex;gap:10px;align-items:flex-start;max-width:92%}
+.msg.you{align-self:flex-end;flex-direction:row-reverse}
+.av{flex:0 0 auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--f-ui);font-size:12px;font-weight:600;color:var(--card)}
+.bubble{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 13px;font-size:16.5px;line-height:1.45;min-width:0}
+.msg.them .bubble{border-top-left-radius:3px}
+.msg.you .bubble{background:var(--accent-soft);border-color:transparent;border-top-right-radius:3px}
+.bubble .who{display:block;font-family:var(--f-ui);font-size:11px;color:var(--muted);margin-bottom:3px;letter-spacing:.02em}
+.why{display:flex;flex-direction:column;gap:5px;border-top:1px dashed var(--line);padding-top:10px}
+.card .what{font-size:15px;color:var(--muted);line-height:1.4}
+.wire{font-size:15px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px 12px}
+.wire .eyebrow{color:var(--accent);margin-right:6px}
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.badge{font-family:var(--f-ui);font-size:12px;background:var(--good-soft);border:1px solid var(--good);border-radius:999px;padding:5px 12px;color:var(--ink)}
+.badge b{color:var(--good)}
+.path{display:flex;flex-direction:column;gap:8px}
+.path div{display:grid;grid-template-columns:110px 1fr;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:9px 12px;font-size:15.5px}
+.path div > *{min-width:0}
+.path b{font-family:var(--f-ui);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+input.name{font:inherit;font-family:var(--f-ui);font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);width:100%;max-width:360px}
+input.name:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+@media (prefers-reduced-motion:no-preference){.fade{animation:fade .25s ease-out}@keyframes fade{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}}
+/* ================= 8-bit skin (Sweetie-16 palette, pixel borders, pixel type) ================= */
+:root{
+  --paper:#e9edf3; --card:#ffffff; --ink:#1a1c2c; --muted:#566c86; --line:#94b0c2;
+  --accent:#3b5dc9; --accent-soft:#dce5ff; --good:#24855b; --good-soft:#dff3e6; --warn:#b8541f; --warn-soft:#fdecdf; --bad:#b13e53; --bad-soft:#f9e1e5; --violet:#5d275d;
+  --edge:#1a1c2c; --drop:#1a1c2c; --grid:#dfe4ec;
+  --f-pixel:"Press Start 2P", ui-monospace, monospace;
+  --f-story:"VT323", ui-monospace, "SF Mono", Menlo, monospace;
+  --f-ui:"VT323", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#1a1c2c; --card:#262b44; --ink:#f4f4f4; --muted:#94b0c2; --line:#333c57;
+  --accent:#41a6f6; --accent-soft:#29366f; --good:#38b764; --good-soft:#1d3a33; --warn:#ef7d57; --warn-soft:#3d2a2c; --bad:#e2607a; --bad-soft:#3a1f2c; --violet:#b48cf2;
+  --edge:#566c86; --drop:#0b0c16; --grid:#1f2236; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#1a1c2c; --card:#262b44; --ink:#f4f4f4; --muted:#94b0c2; --line:#333c57;
+  --accent:#41a6f6; --accent-soft:#29366f; --good:#38b764; --good-soft:#1d3a33; --warn:#ef7d57; --warn-soft:#3d2a2c; --bad:#e2607a; --bad-soft:#3a1f2c; --violet:#b48cf2;
+  --edge:#566c86; --drop:#0b0c16; --grid:#1f2236; color-scheme:dark}
+*{border-radius:0!important}
+body{font-family:var(--f-story);font-size:21px;line-height:1.3;background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 2px,transparent 2px),linear-gradient(90deg,var(--grid) 2px,transparent 2px);background-size:32px 32px}
+h1,h2,.eyebrow,.btn,.chip,.stat .v,.stat .k,.gitem h3,.path b,.guide summary,.snd{font-family:var(--f-pixel);font-weight:400}
+h1{font-size:clamp(22px,5.4vw,36px);line-height:1.3;letter-spacing:0;text-shadow:4px 4px 0 var(--accent-soft)}
+h2{font-size:clamp(15px,3.4vw,19px);line-height:1.45}
+.eyebrow{font-size:9.5px;letter-spacing:.06em;line-height:1.6}
+p{max-width:62ch}
+.note{font-size:20px}
+.ledger{font-size:19px;background:var(--paper);border-bottom:3px solid var(--edge);gap:4px 16px}
+.hearts{color:var(--bad);letter-spacing:3px}
+.steps span{height:10px;background:var(--card);border:2px solid var(--edge)}
+.steps span.done{background:var(--accent)}
+.steps span.now{background:var(--accent);opacity:1;background-image:repeating-linear-gradient(90deg,var(--card) 0 4px,transparent 4px 8px);animation:march 1s steps(4) infinite}
+@keyframes march{to{background-position:8px 0}}
+.card{position:relative;border:3px solid var(--edge);box-shadow:4px 4px 0 var(--drop);transition:transform .1s steps(2),box-shadow .1s steps(2)}
+.card:hover:not([disabled]){transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--drop);border-color:var(--edge)}
+.card:active:not([disabled]){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--drop)}
+.card.sel{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent)}
+.card .t{font-size:22px;font-weight:400;line-height:1.15}
+.card .what{font-size:18.5px;line-height:1.2}
+.card .meta{font-size:17px;line-height:1.25}
+.card.res-good{border-color:var(--good)} .card.res-ok{border-color:var(--warn)} .card.res-bad{border-color:var(--bad)}
+.card.rejected::after{content:"REJECTED";position:absolute;top:10px;right:10px;font-family:var(--f-pixel);font-size:9px;color:var(--bad);border:3px solid var(--bad);padding:5px 6px;background:var(--card);transform:rotate(-7deg)}
+.card.just.rejected{animation:shake .4s steps(6)}
+.card.just.res-good,.card.just.res-ok,.card.just.res-neutral{animation:pop .35s steps(4)}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.02)}100%{transform:none}}
+.chip{font-size:8.5px;padding:5px 7px;letter-spacing:.02em;line-height:1.3}
+.btn{font-size:11px;padding:14px 16px;border:3px solid var(--edge);box-shadow:4px 4px 0 var(--drop);text-transform:uppercase;letter-spacing:.02em;transition:transform .1s steps(2),box-shadow .1s steps(2)}
+.btn:hover:not([disabled]){transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--drop)}
+.btn:active:not([disabled]){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--drop)}
+.btn.ghost{background:var(--card);color:var(--ink)}
+.snd{font-size:8.5px;padding:6px 8px;border:2px solid var(--edge);background:var(--card);color:var(--ink);cursor:pointer;margin-left:auto}
+.snd[aria-pressed="true"]{background:var(--accent);color:var(--card)}
+.feedback{border:3px solid var(--edge);box-shadow:4px 4px 0 var(--drop)}
+.feedback.good{border-color:var(--good)} .feedback.ok{border-color:var(--warn)} .feedback.bad{border-color:var(--bad)}
+.feedback.bad.alarm{animation:alarm .5s steps(2) 3}
+@keyframes alarm{50%{box-shadow:4px 4px 0 var(--bad),0 0 0 4px var(--bad-soft)}}
+.lesson{font-size:20px}
+.src{font-size:15.5px}
+.bubble{border:3px solid var(--edge);box-shadow:3px 3px 0 var(--drop);font-size:20px;line-height:1.25}
+.bubble .who{font-size:15.5px}
+.msg.you .bubble{border-color:var(--edge)}
+.av{width:36px;height:36px;font-family:var(--f-pixel);font-size:9px;border:2px solid var(--edge)}
+.bar{height:32px;border:3px solid var(--edge);box-shadow:4px 4px 0 var(--drop)}
+.bar div{font-family:var(--f-pixel);font-size:8px;background-image:repeating-linear-gradient(90deg,transparent 0 12px,rgba(0,0,0,.2) 12px 14px)}
+.bar div.grow{transform-origin:left;animation:growX .6s steps(6)}
+@keyframes growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.bar-legend{font-size:16px}
+.real,.wire,.stat,.guide,.path div,.dline{border:3px solid var(--edge);box-shadow:4px 4px 0 var(--drop)}
+.real{background:var(--accent-soft);font-size:19px}
+.wire{font-size:18.5px}
+.stat .v{font-size:clamp(14px,3vw,18px);line-height:1.5}
+.stat .k{font-size:8px;line-height:1.6}
+.gitem h3{font-size:9px;line-height:1.6}
+.gitem p{font-size:18.5px;line-height:1.25}
+.guide summary{font-size:9px}
+.path b{font-size:8.5px;line-height:1.6}
+.path div{font-size:18.5px}
+.badge{font-size:17px;border:3px solid var(--good);box-shadow:3px 3px 0 var(--drop)}
+.dline .lbl{font-size:20px}
+.dline .stage{font-size:15px}
+input.name{font-family:var(--f-story);font-size:21px;border:3px solid var(--edge);box-shadow:4px 4px 0 var(--drop)}
+.lvl{display:flex;align-items:center;gap:14px}
+.lvl canvas{image-rendering:pixelated;flex:0 0 auto}
+.hero{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.hero canvas{image-rendering:pixelated}
+.press{font-family:var(--f-pixel);font-size:10px;color:var(--accent);animation:blinkT 1.2s steps(2) infinite}
+@keyframes blinkT{50%{opacity:0}}
+
+/* celebration overlay: one deliberate dark 'game screen' look in both themes */
+#fx{position:fixed;inset:0;z-index:50;background:rgba(26,28,44,.94);display:flex;align-items:center;justify-content:center;padding-block:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#fx[hidden]{display:none!important}
+#fxP{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}
+.fx-panel{position:relative;background:#1a1c2c;color:#f4f4f4;border:4px solid #f4f4f4;box-shadow:0 0 0 4px #1a1c2c,10px 10px 0 4px #000;padding:26px 22px 22px;width:min(460px,100%);text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
+.fx-panel h2{font-family:var(--f-pixel);font-size:clamp(15px,4.4vw,21px);line-height:1.45;color:#ffcd75;text-shadow:3px 3px 0 #b13e53;margin:0}
+#fx.sad .fx-panel h2{color:#94b0c2;text-shadow:3px 3px 0 #333c57}
+.fx-panel p{font-family:var(--f-story);font-size:21px;line-height:1.25;color:#f4f4f4;margin:0}
+.fx-level{font-family:var(--f-pixel);font-size:9px;line-height:1.6;color:#73eff7;letter-spacing:.04em}
+.fx-sprite{image-rendering:pixelated;max-width:100%}
+.fx-sprite.pop{animation:spritePop .5s steps(5) both,bob 1.2s steps(2) .5s infinite}
+.fx-sprite.dig{animation:spritePop .4s steps(4) both,dig .7s steps(3) .4s infinite;transform-origin:50% 80%}
+@keyframes spritePop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes bob{50%{transform:translateY(-6px)}}
+@keyframes dig{0%{transform:rotate(-14deg)}50%{transform:rotate(16deg) translateY(6px)}100%{transform:rotate(-14deg)}}
+.fx-btn{font-family:var(--f-pixel);font-size:11px;background:#ffcd75;color:#1a1c2c;border:3px solid #f4f4f4;padding:13px 18px;cursor:pointer;box-shadow:4px 4px 0 #b13e53}
+.fx-btn:focus-visible{outline:3px solid #73eff7;outline-offset:3px}
+.fx-btn:hover{background:#a7f070}
+#toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translate(-50%,60px);opacity:0;z-index:60;font-family:var(--f-pixel);font-size:10px;line-height:1.6;padding:12px 16px;background:#1a1c2c;color:#ffcd75;border:3px solid #f4f4f4;box-shadow:4px 4px 0 #000;transition:transform .25s steps(3),opacity .25s steps(3);pointer-events:none;max-width:calc(100% - 32px);text-align:center}
+#toast.show{transform:translate(-50%,0);opacity:1}
+#toast.good{color:#a7f070} #toast.bad{color:#ef7d57}
+@media (prefers-reduced-motion:reduce){.fx-sprite,.press,.steps span.now,.card,.bar div.grow,.feedback.bad.alarm{animation:none!important}#toast{transition:none}}
+
+
+/* card binder */
+body.noscroll{overflow:hidden}
+#binder{position:fixed;inset:0;z-index:45;background:var(--paper);overflow-y:auto;padding-block:max(16px,env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background-image:linear-gradient(var(--grid) 2px,transparent 2px),linear-gradient(90deg,var(--grid) 2px,transparent 2px);background-size:32px 32px}
+#binder[hidden]{display:none!important}
+.cardsbtn{margin-left:auto}
+.cardsbtn + .snd{margin-left:0}
+.bpanel{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.bhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.bhead > div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.bintro{font-size:20px;color:var(--muted)}
+.bfilters{display:flex;flex-wrap:wrap;gap:8px}
+.snd.on{background:var(--accent);color:var(--card)}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.ccard{position:relative;background:var(--card);color:var(--ink);border:3px solid var(--tc,var(--edge));box-shadow:4px 4px 0 var(--drop);padding:12px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font:inherit;text-align:center;min-height:178px;transition:transform .1s steps(2)}
+.ccard:hover{transform:translate(-2px,-3px)}
+.ccard:focus-visible,.cardsbtn:focus-visible,.snd:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.ccard canvas{image-rendering:pixelated}
+.ccard .cname{font-size:19px;line-height:1.05}
+.ccard .ctype{font-size:15px;color:var(--muted)}
+.ccard .crar{font-family:var(--f-pixel);font-size:7.5px;color:var(--tc,var(--muted));align-self:flex-start}
+.ccard.locked{border-style:dashed;border-color:var(--line);background:var(--paper);color:var(--muted)}
+.ccard.locked .cname{font-family:var(--f-pixel);font-size:12px}
+.r-epic{background-image:linear-gradient(135deg,transparent 0 70%,var(--accent-soft) 70% 100%)}
+.r-trap{background-image:repeating-linear-gradient(45deg,transparent 0 10px,var(--bad-soft) 10px 14px)}
+.mastered{border-color:#ffcd75!important;box-shadow:4px 4px 0 var(--drop),0 0 0 3px #b8860b inset}
+.mastered::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,205,117,.35) 45%,transparent 60%);background-size:300% 100%;animation:foil 2.4s steps(12) infinite}
+@keyframes foil{from{background-position:100% 0}to{background-position:-100% 0}}
+.cbig{position:relative;background:var(--card);border:4px solid var(--tc,var(--edge));box-shadow:6px 6px 0 var(--drop);padding:18px;display:flex;flex-direction:column;gap:14px;max-width:620px}
+.chead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:var(--f-pixel);font-size:8.5px;color:var(--tc)}
+.chead .cm{color:#b8860b}
+.ctop{display:flex;align-items:center;gap:16px}
+.ctop canvas{image-rendering:pixelated;flex:0 0 auto}
+.ctop h3{font-family:var(--f-pixel);font-weight:400;font-size:clamp(14px,3.6vw,18px);line-height:1.45;margin:0}
+.cstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 16px;font-size:17px}
+.cstats div{display:flex;flex-direction:column;gap:3px}
+.cbars{display:flex;gap:3px}
+.cbars i{width:18px;height:12px;border:2px solid var(--edge);background:var(--paper)}
+.cbars i.on{background:var(--tc)}
+.cbig dl{display:grid;grid-template-columns:120px 1fr;gap:8px 14px;margin:0;font-size:19px;line-height:1.25}
+.cbig dt{font-family:var(--f-pixel);font-size:8.5px;line-height:1.9;color:var(--muted)}
+.cbig dd{margin:0;min-width:0}
+.chint{font-size:18px;color:var(--accent)}
+@media (max-width:520px){.cbig dl{grid-template-columns:1fr}.cbig dt{margin-top:4px}}
+@media (prefers-reduced-motion:reduce){.mastered::after{animation:none}}
+
+
+/* about / disclaimer */
+.about{background:var(--card);border:3px solid var(--edge);box-shadow:4px 4px 0 var(--drop)}
+.about summary{cursor:pointer;padding:12px 16px;font-family:var(--f-pixel);font-size:9.5px;line-height:1.6;color:var(--accent)}
+.about summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.about-body{padding:0 16px 16px;display:flex;flex-direction:column;gap:10px;font-size:19px}
+.about-body .sources{font-size:17px;margin:0;padding-left:20px}
+
+/* narrow-screen fixes */
+.dline{grid-template-columns:1fr}
+.dline .lbl,.dline .lesson,.dline .src{overflow-wrap:anywhere}
+.chip{white-space:normal;max-width:100%}
+.bhead > div{flex:1 1 220px}
+.bhead h2{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ---------------- Counterparties (fictional people) ---------------- */
+const P={
+  you:{n:"You",r:"Founder & CEO",t:"you"},
+  vc:{n:"Lena Brandt",r:"Partner, 8-Bit Climate Ventures",t:"investor"},
+  agency:{n:"Dr. Tomasz Wójcik",r:"Programme officer, public funding agency",t:"public"},
+  host:{n:"Ines Okafor",r:"Operations lead at the host facility",t:"partner"},
+  vlender:{n:"Raj Mehta",r:"Director, Cartridge Credit Partners",t:"bank"},
+  housebank:{n:"Henrik Saar",r:"Relationship manager, your house bank",t:"bank"},
+  cvc:{n:"Charlotte Duval",r:"Head of Ventures at an industry incumbent",t:"customer"},
+  strat:{n:"Marco Bellini",r:"Head of Strategy at a target customer",t:"customer"},
+  lessor:{n:"Sofia Lind",r:"Equipment finance, Sprite Leasing Co.",t:"bank"},
+  regbank:{n:"Peter Holm",r:"Business banking, Pixeltown Savings Bank",t:"bank"},
+  infra:{n:"James Whitford",r:"Partner, core infrastructure fund",t:"investor"},
+  board:{n:"Anders Kvist",r:"Your board chair",t:"internal"},
+  buyer:{n:"Yuki Tanaka",r:"Head of procurement at your anchor customer",t:"customer"},
+  director:{n:"Maria Santos",r:"Your new project director",t:"internal"},
+  cfo:{n:"Jonas Weber",r:"Your CFO",t:"internal"},
+  epc:{n:"Graham Pike",r:"Bid manager, top-tier EPC contractor",t:"partner"},
+  supplier:{n:"Elif Demir",r:"Key-account lead, core equipment supplier",t:"partner"},
+  permit:{n:"Sanne de Vries",r:"Head of permitting, regional authority",t:"public"},
+  reg:{n:"Dr. Léa Fontaine",r:"Regulatory adviser, food safety",t:"partner"},
+  ie:{n:"Dr. Kwame Asante",r:"Independent engineer",t:"partner"},
+  insurer:{n:"Hannah Ross",r:"Underwriter, specialty insurer",t:"partner"},
+  pfbank:{n:"Marta Lindqvist",r:"Director, Project Finance, mandated lead arranger",t:"bank"},
+  publender:{n:"Jean-Luc Moreau",r:"Senior investment officer, European public lender",t:"public"},
+  infragrowth:{n:"Priya Natarajan",r:"Partner, climate infrastructure fund",t:"investor"},
+  catalytic:{n:"Amara Osei",r:"Programme lead, catalytic capital fund",t:"public"},
+  crossover:{n:"Ben Carter",r:"Partner, crossover growth fund",t:"investor"},
+  incumbent:{n:"Dieter Krause",r:"CEO of an industry incumbent",t:"customer"}
+};
+const P_COLOR={you:"var(--accent)",investor:"var(--accent)",bank:"var(--warn)",public:"var(--good)",customer:"var(--violet)",partner:"var(--muted)",internal:"var(--ink)"};
+const PROD={steel:"green steel",saf:"e-SAF",pf:"animal-free whey protein",biochem:"bio-based chemicals",ldes:"firm storage capacity"};
+const missText=m=>m.length>1?m.slice(0,-1).join(", ")+" and "+m[m.length-1]:m[0];
+
+/* TALK: what you say, and what they say back. yes/no can read flags (f) and the result (r). */
+const TALK={
+  "pilot.vcA":{p:"vc",pitch:"Our lab results are solid at TRL 4. We want to prove the process at pilot scale.",
+    yes:()=>"This is exactly our stage. Taking technology risk is our job. We'll lead the round and keep a reserve for your next one. Just don't expect us to fund the commercial plant on our own later; our fund isn't built for that."},
+  "pilot.grantRD":{p:"agency",pitch:"Our pilot programme fits your call: pre-competitive work with clear milestones.",
+    yes:()=>"Your proposal scored well. The grant agreement takes about four months, and we pay against milestones. Feel free to share our evaluation with your investors; it tends to help."},
+  "pilot.shared":{p:"host",pitch:"Could we run our pilot campaigns on your equipment instead of building our own?",
+    yes:()=>"We have capacity from Q3. You pay per campaign, you keep your data, and you can test a wider range of conditions than you could afford on your own kit."},
+  "pilot.vdebt":{p:"vlender",pitch:"We'd like a venture debt facility to extend our runway through the pilot.",
+    no:()=>"What would I lend against? You have no revenue and no big equity round behind you yet. Come back once customers are paying, or right after a large round closes."},
+  "pilot.bank":{p:"housebank",pitch:"We need a term loan to build our pilot.",
+    no:()=>"I like the story, but my credit committee will ask for cash flow and collateral, and you have neither. This is equity risk. I can't price it as a loan."},
+  "pilot.cvcX":{p:"cvc",pitch:"Would your venture arm invest in our pilot?",
+    yes:()=>"Happily. One condition: five years of exclusivity on your product in our markets. It's standard for us."},
+  "demo.seriesB":{p:"vc",pitch:"The pilot data are in: thousands of hours, targets met. We're raising for the demo.",
+    yes:()=>"We've brought in two co-investors who know industrial scale-up. No single fund wants this much concentration, and three strong names on the cap table will matter to whoever funds your plant."},
+  "demo.strategic":{p:"strat",pitch:()=>`Would you invest alongside a joint development agreement? You'd help shape the ${PROD[S.sector]} you'll eventually buy.`,
+    yes:f=>f.exclusivity?"We'd like to, but your exclusivity with our competitor's venture arm limits what we can do together. A small ticket is all I can get approved.":"Our board approved a minority stake. We get early access and a say in the spec; you get a reference customer. When you're ready to build the plant, we'll talk offtake."},
+  "demo.grantDemo":{p:"agency",pitch:"Our demo is ready to build and already co-funded.",
+    yes:()=>"Approved. The deadlines are strict and the reporting is heavy, but our due diligence tends to open other doors for you."},
+  "demo.lease":{p:"lessor",pitch:"Could you lease us the standard equipment in our demo plant?",
+    yes:()=>"Pumps, compressors, tanks, the electrical skid: yes. We keep title to the equipment, so whether your process works isn't our risk. The custom reactor stays on your balance sheet."},
+  "demo.regBank":{p:"regbank",pitch:"We need a construction loan for the demo.",
+    yes:()=>"We can do that. The equipment is our collateral and your investors look strong. Standard covenants on budget and schedule. Just stay on plan."},
+  "demo.infra":{p:"infra",pitch:"Would you invest equity in our demo plant?",
+    no:()=>"We buy 20 years of contracted cash flows at low risk. Your demo has no contracts and no track record. Call us when plant number two or three is being built."},
+  "demo.skip":{p:"board",pitch:"What if we skip the demo and go straight to commercial scale?",
+    yes:()=>"Speed wins markets. The pilot worked, so let's go big. I'll tell the investors we're two and a half years ahead of plan."},
+  "dev.offtake":{p:"buyer",pitch:()=>`We're asking for a 10-year take-or-pay contract for over half the plant's ${PROD[S.sector]}, at a fixed green premium.`,
+    yes:f=>f.skippedDemo?"Without demo data I can't get volume commitments past my board. I'll sign a letter of intent, nothing binding.":f.singleOfftaker?"Given your exclusivity, we'll take the full output. Just be aware you'll depend on us alone.":"Our board signed off: ten years, take-or-pay, tied to this plant, with a commissioning window and a price floor and ceiling. Our credit rating should help with your lenders."},
+  "dev.loi":{p:"buyer",pitch:"Would you sign a letter of intent to buy from our first plant?",
+    yes:()=>"Sure. An LOI costs us nothing. Send the template over."},
+  "dev.team":{p:"director",pitch:"Welcome aboard. Where do you start?",
+    yes:()=>"I've built two chemical plants and closed a €400M project financing. First, I'll challenge every number in the EPC estimates. Second, I'll make sure someone owns every interface on this site."},
+  "dev.epcWrap":{p:"epc",pitch:"Can you give us a fixed-price, date-certain turnkey contract?",
+    yes:()=>"We can, but we've never built your process, so we'll price that risk. Expect a premium of about 20%, our schedule, and little room for your engineers to iterate."},
+  "dev.multiEpc":{p:"supplier",pitch:"We'll integrate the packages ourselves. Will you guarantee the performance of your units?",
+    yes:f=>f.interfaceRisk?"For our unit, yes, with liquidated damages if it underperforms. But who on your side manages the interfaces between the packages? Nobody has asked us that yet.":"Yes. We guarantee output and availability for our units, with liquidated damages if we miss. Your project director already has our interface schedule."},
+  "dev.site":{p:()=>S.sector==="pf"?"reg":"permit",pitch:()=>S.sector==="pf"?"How do we avoid waiting years for EU approval?":"We want to start permits now, on a brownfield site.",
+    yes:()=>S.sector==="pf"?"File the Novel Food dossier now, and make it complete the first time; incomplete dossiers stall. Meanwhile a US self-affirmed GRAS route can get you to customers within a year.":"Brownfield helps: the land is already zoned for industry and the utilities are there. File now and we can run the environmental review in parallel with your design."},
+  "dev.ie":{p:"ie",pitch:"Please review our design, capex and model before we go to lenders.",
+    yes:()=>"Your 92% first-year uptime is optimistic. I've added a downside case at 60%, and I've flagged two single points of failure. Lenders will read my report before yours."},
+  "dev.contingency":{p:"cfo",pitch:"Should we really budget 25-30% contingency?",
+    yes:()=>"It makes the budget look 15% bigger, but lenders expect it at FOAK and most FOAKs overrun. Raising it now is far cheaper than going back to investors halfway through construction."},
+  "dev.bigGrant":{p:"agency",pitch:"We'd like to apply to the large-scale call for our FOAK.",
+    yes:()=>"Application received. Evaluation takes about nine months. If you're selected, the grant agreement can be signed before your final investment decision."},
+  "dev.tpi":{p:"insurer",pitch:"Would you insure the plant's output against underperformance?",
+    yes:()=>"Your demo logged thousands of continuous runtime hours, with a root-cause analysis for every stoppage. That's data I can price. We'll insure output against the guaranteed performance curve.",
+    no:()=>"Without runtime data I have nothing to price. Come back with a few thousand hours of operation."},
+  "close.senior":{p:"pfbank",pitch:"We're seeking senior non-recourse debt for 40% of the project.",
+    yes:()=>"Credit committee approved it. 40% loan-to-value, a 1.8x minimum debt-service cover ratio, a cash sweep, and drawdowns tied to construction milestones. Your offtake contracts and guarantees did the heavy lifting.",
+    no:(f,r)=>`Not yet. Before we can lend I need ${missText(r.miss)}. Banks can't take equity risk for a debt return. Come back when those are in place.`},
+  "close.gov":{p:"publender",pitch:"Would you take a senior tranche in our first-of-a-kind plant?",
+    yes:()=>"Yes, 25%. Our mandate lets us carry first-of-a-kind risk once the engineering is independently validated. Our diligence took a while, but our repayment profile can flex if ramp-up runs long.",
+    no:(f,r)=>`Our mandate allows first-of-a-kind risk, not unvalidated risk. We would need ${missText(r.miss)}.`},
+  "close.grant":{p:"agency",pitch:"Can our grant support the FOAK budget?",
+    yes:()=>"Your grant agreement is signed. Disbursement follows your milestones.",
+    no:()=>"The call closed months ago. You needed to apply during development. The next call opens next year."},
+  "close.projEq":{p:"infragrowth",pitch:"Would you invest equity in the project company?",
+    yes:()=>"Yes, into the project company, not your TopCo, released in tranches at financial close, mechanical completion and the performance test. Your offtake and your delivery team are why we're here.",
+    no:(f,r)=>`We like the technology, but we invest in projects, not science. We'd need ${missText(r.miss)}.`},
+  "close.stratEq":{p:"strat",pitch:"Would you put equity into the project company next to your offtake?",
+    yes:()=>"Yes. It secures our supply, and lenders like seeing the customer with skin in the game.",
+    no:()=>"We don't know you well enough to invest. That relationship should have started at the demo."},
+  "close.catalytic":{p:"catalytic",pitch:"Could you take a first-loss slice of the stack?",
+    yes:()=>"We'll take the first-loss position: if things go wrong, we lose money first. That's what lets the commercial money in. Our capital is limited, though, so it's only a thin slice."},
+  "close.super":{p:"crossover",pitch:"We want to fund the plant with a large equity round at the company level.",
+    yes:()=>"We'll lead it. Understand what you're buying: expensive money, heavy dilution, and the whole company riding on one plant."},
+  "close.vdebt":{p:"vlender",pitch:"Can we add some venture debt to close the gap?",
+    yes:()=>"Now that there's equity behind you, yes. Three years, interest-only for 18 months, then it amortises. Make sure the plant is producing by then."},
+  "close.sellout":{p:"incumbent",pitch:"Would you take over the project and build it on your balance sheet?",
+    yes:()=>"We'll take a majority of the project company and fund the build. You keep a minority and a licence fee. Our engineers will run it our way."}
+};
+
+/* One-line plain-language explainers on each card */
+const WHAT={
+  "pilot.vcA":"Equity from funds that back early technology in exchange for a share of the company.",
+  "pilot.grantRD":"Public money for research milestones. Non-dilutive: you give up no shares.",
+  "pilot.shared":"Rent time on existing equipment instead of buying your own.",
+  "pilot.vdebt":"A loan to venture-backed companies, usually lent against revenue or a recent equity round.",
+  "pilot.bank":"A plain bank loan, repaid from cash flow and secured on assets.",
+  "pilot.cvcX":"Equity from a corporation's venture arm, with strings attached.",
+  "demo.seriesB":"A larger equity round shared between several investors.",
+  "demo.strategic":"A future customer buys shares and co-develops the product with you.",
+  "demo.grantDemo":"Public money for building and running a demonstration plant.",
+  "demo.lease":"A lessor buys standard equipment and rents it to you.",
+  "demo.regBank":"A bank loan to build the demo, with budget and schedule covenants.",
+  "demo.infra":"Long-term equity from funds that own toll roads, grids and power plants.",
+  "demo.skip":"Go from pilot straight to the commercial plant, roughly a 100× jump.",
+  "close.senior":"Debt repaid first, from the project's cash flow only (non-recourse), with no claim on your company.",
+  "close.gov":"Senior debt from a public lender with a mandate to carry more risk than banks.",
+  "close.grant":"Non-dilutive public money paid against milestones.",
+  "close.projEq":"Equity in the plant's own company (SPV) rather than in your company.",
+  "close.stratEq":"Customers and suppliers buy shares in the plant's company.",
+  "close.catalytic":"Philanthropic or impact money that takes losses first to protect other investors.",
+  "close.super":"A very large equity round in your company (the TopCo), with the plant on its balance sheet.",
+  "close.vdebt":"A short-term loan to your company, repaid within three years.",
+  "close.sellout":"An incumbent takes control of the plant and funds it from its own balance sheet."
+};
+
+/* Field guide per stage */
+const GUIDE={
+  pilot:[
+    {t:"What this stage proves",d:"The process works under operating conditions (TRL 4-6). Pilots typically cost €1-10M and run 1-2 years of process validation.",src:"BCG p4; AFRY p6"},
+    {t:"Who funds it",d:"Grants and venture capital. Corporates may join. Debt is not available yet, because there is no cash flow and no collateral.",src:"BCG p12; TUM p21"},
+    {t:"Dilution",d:"Each equity round gives away part of your company. Non-dilutive money (grants, shared facilities) protects your stake for the expensive stages later.",src:"OCED p16"},
+    {t:"The valley of death",d:"Venture funding peaks around TRL 4 and falls off; infrastructure money only arrives at TRL 9. The gap sits at TRL 7-8, exactly where your FOAK will be.",src:"TNI p4-5"},
+    {t:"Capital-efficient scale-up",d:"Since 2021 investors have preferred shared pilot plants, contract manufacturers and brownfield sites over building your own assets early.",src:"Invest-NL Agrifood p39"}
+  ],
+  demo:[
+    {t:"What this stage proves",d:"The integrated system works (TRL 6-7). Demos typically cost €20-100M and need 1-2 years to build plus 2-3 years of validation.",src:"BCG p4; OCED p10"},
+    {t:"The 10× rule",d:"Engineers scale up about one order of magnitude per step. Bigger jumps lock in flaws you only discover at scale.",src:"BCG p7, p9"},
+    {t:"The three-legged stool",d:"Almost every successful FOAK rested on three legs: a syndicate of specialist VCs, corporate partners who invest and buy, and government grants or loans.",src:"TNI p7-9"},
+    {t:"Why banks stay out",d:"Only 1 of 9 early demo projects in the DOE study had project-level debt. Equipment leases are the exception: the lender holds the equipment, not the technology risk.",src:"OCED p16-17"},
+    {t:"Exclusivity",d:"Corporate investors often ask for exclusivity. Most FOAK developers refused it to keep buyers and investors open.",src:"OCED p16"}
+  ],
+  dev:[
+    {t:"Financeable vs bankable",d:"Financeable means you can raise high-risk capital (grants, equity). Bankable means you can raise cheap debt, which needs offtake, an EPC contract, collateral and credit enhancement.",src:"TUM p21"},
+    {t:"Take-or-pay offtake",d:"A buyer commits to pay for contracted volume whether or not it takes delivery. Lenders count binding, asset-specific contracts. LOIs don't count.",src:"OCED p17; AFRY p20-21"},
+    {t:"EPC wrap vs owner-integrator",d:"An EPC (engineering, procurement, construction) wrap gives one fixed price and date. Most FOAKs instead split the work into packages and integrate it themselves, with performance guarantees from suppliers.",src:"OCED p20"},
+    {t:"Independent engineer",d:"A third-party expert lenders rely on to validate your design, capex, uptime and downside cases.",src:"BCG p9"},
+    {t:"Contingency",d:"FOAKs need 25-30% contingency. 10 of 16 European FOAKs overran their budget, two by more than 80%.",src:"OCED p19; AFRY p15"},
+    {t:"Lenders' six bricks",d:"Superior tech, market acceptance, project-management capability, robust EPC contracts, supply chain, and a line of sight to future funding.",src:"TNI p9"}
+  ],
+  close:[
+    {t:"TopCo vs ProjectCo",d:"Your startup (the TopCo) owns the IP. The plant sits in a separate project company (an SPV), so project investors don't dilute your TopCo and a failure is ring-fenced.",src:"BCG p4, p9"},
+    {t:"Stack by risk layer",d:"Grants and first-loss capital at the bottom, then equity, then public and commercial debt. Each layer is paid back in reverse order if things go wrong.",src:"Road p48-49; BCG p9"},
+    {t:"Loan-to-value (LTV)",d:"Debt as a share of project cost. FOAK lenders go to 20-60%, compared with about 80% for solar.",src:"OCED p19"},
+    {t:"Debt-service cover ratio (DSCR)",d:"Cash flow divided by debt payments. FOAK lenders want 1.5-2x or more; mature projects need 1.2-1.5x.",src:"OCED p19"},
+    {t:"Government lenders lead",d:"So far, FOAK project lending has been dominated by public lenders (DOE LPO, EIB, export credit agencies), with 2+ years of diligence.",src:"OCED p19"},
+    {t:"Allocation errors",d:"BCG names three: venture equity taking execution risk, senior debt arriving before downside is bounded, and infrastructure capital arriving before operating proof.",src:"BCG p10"}
+  ],
+  build:[
+    {t:"Ramp-up",d:"Business cases assume 6-12 months to reach nameplate capacity. About three years is common, and 61% of FOAKs ran 12+ months late.",src:"AFRY p12"},
+    {t:"Liquidated damages",d:"Pre-agreed compensation a supplier pays if equipment underperforms or arrives late. It turns technical risk into money.",src:"OCED p17"},
+    {t:"Down round",d:"Raising equity at a lower valuation than the last round, so existing holders are diluted more heavily.",src:"AFRY p15"},
+    {t:"After COD",d:"Once the plant runs, operating data make the next plant bankable, and the FOAK itself can be refinanced with cheaper debt.",src:"OCED p18; BCG p9"}
+  ]
+};
+
+function persona(key){const k=typeof key==="function"?key():key;return P[k]||P.you;}
+const initials=n=>n==="You"?"You":n.replace(/^Dr\. /,"").split(/\s+/).map(w=>w[0]).slice(0,2).join("");
+function bubble(p,text,isYou){
+  return `<div class="msg ${isYou?"you":"them"}"><div class="av" style="background:${P_COLOR[p.t]}" aria-hidden="true">${initials(p.n)}</div><div class="bubble"><span class="who">${esc(p.n)} · ${esc(p.r)}</span>${esc(text)}</div></div>`;
+}
+function talkFor(key,res){
+  const t=TALK[key];if(!t)return null;
+  const accepted=res.ok!==false&&!res.rejected;
+  const fn=accepted?(t.yes||t.no):(t.no||t.yes);
+  return {p:persona(t.p),pitch:typeof t.pitch==="function"?t.pitch():t.pitch,reply:fn(S.flags,res)};
+}
+function convo(talk){if(!talk)return "";return `<div class="convo">${talk.pitch?bubble(P.you,talk.pitch,true):""}${bubble(talk.p,talk.reply,false)}</div>`;}
+/* ================= v3: regions, conflicts, committee questions, news, badges ================= */
+Object.assign(P,{
+  cto:{n:"Dr. Noor Haddad",r:"Your co-founder & CTO",t:"internal"},
+  sales:{n:"Tom Eriksen",r:"Your head of sales",t:"internal"},
+  lenderAdv:{n:"Clara Hoffmann",r:"Lenders' technical adviser",t:"bank"},
+  policy:{n:"Ana Ruiz",r:"Policy adviser",t:"partner"},
+  gridop:{n:"Bram Visser",r:"Account manager, grid operator",t:"public"},
+  gerbank:{n:"Stefan Krüger",r:"Credit officer, German commercial bank",t:"bank"},
+  bpi:{n:"Camille Laurent",r:"Investment director, French public investment fund",t:"public"},
+  partnerFR:{n:"Hélène Marchand",r:"CEO of a regional industrial partner in Grand Est",t:"customer"},
+  doe:{n:"Dana Whitaker",r:"Program manager, federal energy agency",t:"public"}
+});
+
+const REGIONS={
+  nordics:{name:"Nordics",tag:"Cheap clean power, fast permits, sovereign guarantees",
+    note:"Low-cost clean power and fast permitting: Stegra got its environmental permit in 6 months, against a typical 5-10 years. National debt offices and export credit agencies can guarantee bank debt. The home market is small, so many buyers are abroad.",src:"OCED p32; TUM p42",
+    N:{grantDemo:"Swedish Energy Agency Industrial Leap grant",govLoan:"EIB loan with export-credit-agency cover"},
+    closeExtra:{id:"sov",label:"Larger bank tranche covered by a national debt office / export-credit guarantee",who:"State guarantor (Riksgälden- or Euler Hermes-style)",kind:"debt",cover:.2,months:6,req:"Binding offtake · independent engineer · demo data",
+      what:"A state guarantor promises to repay the banks if you can't, so they lend more.",
+      run:()=>{const f=S.flags,miss=[];if(!(f.offtakeBinding||f.ccfd))miss.push("binding offtake");if(!f.ie)miss.push("an independent engineer review");if(f.skippedDemo)miss.push("operating data from a demo");
+        if(miss.length)return{ok:false,months:3,v:"bad",miss,lesson:`The guarantor declines. Missing: ${miss.join(", ")}.`,src:"OCED p32"};
+        return{ok:true,v:"good",lesson:"Stegra's senior debt was backed by two €1.2B guarantees from the Swedish National Debt Office and Euler Hermes. The guarantor carries the risk the banks won't, so the debt can be larger.",src:"OCED p32; TUM p42"}},
+      talk:{p:"publender",pitch:"Would the state guarantee part of our bank debt?",yes:()=>"Yes. We'll guarantee a tranche, so your banks can lend more than they could alone. We price the guarantee, and we'll want the same diligence package the banks get.",no:(f,r)=>`A guarantee is still credit risk for us. We would need ${missText(r.miss)}.`}},
+    event:{id:"remote",title:"Remote-site logistics bite",text:"Heavy equipment deliveries to your northern site hit road-access and unloading limits, and the construction workforce is hard to house.",mit:["site"],mitText:"Your site package mapped routes, unloading capacity and worker housing up front.",months:5,src:"AFRY p15"}},
+  nl:{name:"Netherlands",tag:"Shared facilities and Invest-NL, but grid congestion",
+    note:"Strong shared pilot infrastructure (NIZO, Ede, with Ghent next door) and Invest-NL as a public co-investor that mobilises about 3.4× its own money. But high energy prices, labour costs and grid congestion make manufacturing expensive.",src:"Invest-NL Agrifood p13-14, p40-41",
+    N:{grantDemo:"Invest-NL / regional development fund co-investment",govLoan:"Invest-NL loan alongside the EIB"},
+    closeExtra:{id:"investnl",label:"Invest-NL co-investment in the project company",who:"National promotional institution",kind:"spv",cover:.15,months:4,req:"Credible technical and commercial evidence · private co-investors · activity in the Netherlands",
+      what:"Public equity that comes in alongside private investors to close a gap they can't close alone.",
+      run:()=>{const f=S.flags;if(f.abroad)return{ok:false,months:1,v:"bad",lesson:"Your plant is outside the Netherlands, so it falls outside Invest-NL's mandate.",src:"Invest-NL Agrifood p12"};
+        if(!(f.offtakeBinding||f.strategicPartner))return{ok:false,months:2,v:"bad",lesson:"Invest-NL needs credible commercial evidence and private co-investors; it won't carry validation risk for you.",src:"Invest-NL Agrifood p12"};
+        return{ok:true,v:"good",lesson:"Invest-NL's food and alt-protein portfolio attracted about 3.4× its own contribution in total financing. It wants additionality: private money alongside, with validation left to companies and customers.",src:"Invest-NL Agrifood p12, p14"}},
+      talk:{p:"agency",pitch:"Would Invest-NL co-invest in our first plant?",yes:()=>"Yes, as a minority alongside your private investors. We fill the gap they can't, we don't replace them.",no:(f)=>f.abroad?"The plant is abroad. That's outside our mandate, I'm afraid.":"Show me private co-investors and customer commitments first. We don't carry validation risk."}},
+    event:{id:"grid",title:"Grid congestion",text:"The grid operator cannot deliver the connection capacity you need for another 18 months.",mit:["colocate"],mitText:"You co-located where a connection already exists.",months:12,src:"Invest-NL Agrifood p41"}},
+  france:{name:"France",tag:"Bpifrance industrial policy and direct FOAK support",
+    note:"France backs first plants directly. Première Usine mixes grants and repayable advances (60/40) at 20-30% aid intensity, and Bpifrance's SPI fund invests €10-160M of equity in industrial projects above TRL 6. Regions with partners, feedstock and demo facilities, such as Grand Est, attract plants.",src:"EIB p35-38",
+    N:{grantDemo:"Bpifrance innovation aid",grantBig:"Première Usine support (60% grant, 40% repayable advance)",govLoan:"EIB loan plus a Bpifrance industrial loan"},
+    closeExtra:{id:"spi",label:"Bpifrance SPI fund equity in the project company",who:"State-backed industrial equity fund",kind:"spv",cover:.2,months:6,req:"TRL above 6 · industrial site in France",
+      what:"Public equity for industrial plants, written in tickets of €10-160M.",
+      run:()=>{if(S.flags.skippedDemo)return{ok:false,months:2,v:"bad",lesson:"SPI invests above TRL 6. Without a demo you can't show that.",src:"EIB p35"};
+        return{ok:true,v:"good",lesson:"AFYREN's FOAK biorefinery was equity-funded by Bpifrance's SPI fund. A national industrialisation fund can fill the FOAK equity gap that VCs leave.",src:"EIB p35"}},
+      talk:{p:"bpi",pitch:"Would SPI take equity in our first plant?",yes:()=>"Yes. This is what SPI exists for: industrial first plants in France that are past TRL 6. We'll take a meaningful minority in the project company.",no:()=>"Come back when a demo has proven the integrated system. We invest above TRL 6."}},
+    event:null},
+  germany:{name:"Germany",tag:"KfW, IPCEI and carbon contracts, cautious banks",
+    note:"Germany offers KfW FOAK loans through the Deutschlandfonds, IPCEI support and carbon contracts for difference that stabilise revenue. But interviewees describe a risk-averse banking culture unfamiliar with non-standard contracts.",src:"TUM p7, p17-18, p24-25, p42",
+    N:{grantBig:"EU Innovation Fund grant plus IPCEI support",govLoan:"KfW FOAK loan (Deutschlandfonds) alongside the EIB"},
+    devExtra:{id:"ccfd",label:"Bid for a carbon contract for difference (Klimaschutzvertrag)",months:8,
+      run:()=>{S.flags.ccfd=true;return{v:"good",lesson:"A carbon contract for difference pays the gap between your abatement cost and the CO₂ price, which stabilises revenue and supports bankability. TUM recommends linking such bankable instruments to the financeable ones.",src:"TUM p7, p24-25"}},
+      talk:{p:"agency",pitch:"We'd like to bid in the carbon contract for difference round.",yes:()=>"Your bid was successful. For 15 years we pay the difference between your agreed abatement price and the market CO₂ price. Your lenders will like that."}},
+    event:null},
+  us:{name:"United States",tag:"DOE loans, IRA tax credits and policy whiplash",
+    note:"The US built the largest FOAK toolkit: DOE Loan Programs Office guarantees, OCED demonstration awards and transferable tax credits. But in October 2025 DOE terminated 223 projects worth over $7.5B, so policy is a bridge, not a foundation. US food approval routes are faster than EU Novel Food.",src:"OCED p17, p19; BCG p14, p16; Invest-NL Agrifood p40",
+    N:{grantSmall:"ARPA-E / SBIR grant",grantDemo:"DOE OCED demonstration award",grantBig:"DOE industrial demonstration grant",govLoan:"DOE Loan Programs Office loan guarantee"},
+    closeExtra:{id:"taxcredit",label:"Sell transferable clean-energy tax credits to a corporate buyer, with a bridge loan",who:"Corporate tax-credit buyer",kind:"grant",cover:.12,months:2,req:"A project that qualifies for the credits",
+      what:"Turn future tax credits into cash now by selling them to a company with a tax bill.",
+      run:()=>{S.flags.taxCredit=true;return{ok:true,v:"good",lesson:"Developers can use credits in-house, sell them through transferability (bridge loans are available), or bring in tax equity. Solugen used New Markets Tax Credits with a tax-equity partner. Just remember credits are policy, and policy can change.",src:"OCED p17; BCG p14"}},
+      talk:{p:"cfo",pitch:"Can we monetise the tax credits now?",yes:()=>"Yes. A buyer will pay about 90 cents on the dollar, and a bridge lender advances cash against that. It's real money, as long as Congress doesn't change the rules."}},
+    event:{id:"nepa",title:"Federal environmental review drags",text:"Because your project uses federal money, the NEPA environmental review adds months before key works can start.",mit:["site"],mitText:"You started permitting early, so the review ran in parallel with design.",months:8,src:"OCED p21"},
+    policyAdj:.2,policyHard:true}
+};
+Object.values(REGIONS).forEach(R=>{if(R.closeExtra){TALK["close."+R.closeExtra.id]=R.closeExtra.talk;WHAT["close."+R.closeExtra.id]=R.closeExtra.what;}if(R.devExtra)TALK["dev."+R.devExtra.id]=R.devExtra.talk;});
+const CO_NAMES={steel:"Pixel Steel Co.",saf:"Byte Fuels",pf:"8-Bit Dairy",biochem:"Chiptune Chemicals",ldes:"Blockwatt Storage"};
+
+/* Regional hooks used by the main game */
+function regionalDev(L){const R=REGIONS[S.region];if(R.devExtra)L.push(R.devExtra);return L;}
+function regionalClose(L){
+  const R=REGIONS[S.region],f=S.flags;
+  const sen=L.find(o=>o.id==="senior");
+  if(S.region==="germany"&&!f.govAnchor){sen.cover=.30;sen.who="German bank syndicate (cautious)";}
+  const orig=sen.run;
+  sen.run=(o)=>{if(f.penaltyClash)return{ok:false,months:3,v:"bad",miss:["offtake contracts without uncapped delay penalties"],lesson:"The banks decline: uncapped delay penalties in your offtake contracts make the cash flows unbankable. Banks found such penalties 'completely unacceptable'.",src:"AFRY p21"};
+    if(f.offtakeWeak)return{ok:false,months:3,v:"bad",miss:["offtake contracts tied to this specific plant"],lesson:"The banks decline: flexible contracts across future plants don't count. Lenders only underwrite asset-specific offtake.",src:"OCED p17"};
+    return orig(o);};
+  if(R.closeExtra)L.splice(L.length-3,0,R.closeExtra);
+  return L;
+}
+function sectorEvent(){
+  const se=SEC().ev,f=S.flags;let mit=se.mit.some(m=>f[m]),mitText=se.mitText;
+  if(S.region==="nordics"&&S.sector==="saf"){mit=true;mitText="Nordic hydro and wind keep your long-term power price low and stable.";}
+  if(S.region==="us"&&S.sector==="pf"){mit=true;mitText="You're already selling in the US under the faster FDA route; EU approval is upside, not a gate.";}
+  return{id:"sector",title:se.title,text:se.text,mit,mitText,months:se.months,delay:true,src:se.src};
+}
+function regionEvent(){const e=REGIONS[S.region].event;return{...e,mit:e.mit.some(m=>S.flags[m]),delay:true};}
+
+/* ---------------- Conflicts: realistic stakeholder dilemmas between stages ---------------- */
+const DILEMMAS=[
+  {id:"platform",at:"pilot",title:"Three markets or one?",
+    setup:[["cto","The platform works for three applications. Let's develop all three in parallel. Investors love a bigger market."],["vc","A bigger addressable market does help the next round's story."],["sales","Our first customers only care about one of them."]],
+    choices:[
+      {label:"Focus on one application until the first plant is financed",v:"good",reply:["cto","Fine. The other two go in a drawer until we have a bankable plant."],lesson:"DOE case companies that chased several applications at once had to re-run demos for each, which stretched timelines and capital needs. Focus on one until it is debt-financeable.",src:"OCED p26"},
+      {label:"Develop all three in parallel",v:"bad",fx:S=>{S.mods.demoNeed=1.3;S.month+=6;},reply:["vc","Great story. It's going to make your demo about 30% more expensive."],lesson:"Platform over-reach: pursuing multiple applications in parallel meant re-running demos for each, with longer timelines and more capital.",src:"OCED p26"},
+      {label:"License the other two applications to partners now",v:"ok",fx:S=>{S.month+=2;},reply:["sales","Two partners signed term sheets, but they want to see a working plant before paying anything real."],lesson:"Licensing usually needs a demonstrated plant first. Two DOE case companies licensed early and struggled to grow; one went back to owning its plants.",src:"OCED p25; BCG p6"}]},
+  {id:"validate",at:"pilot",title:"Technology first or customers first?",
+    setup:[["cto","Give me nine more months. I can raise yield another 30% before we talk to customers."],["sales","We still don't know who pays what. Three customers asked for samples months ago and we never sent them."]],
+    choices:[
+      {label:"Run paid customer trials now, in parallel with optimisation",v:"good",fx:S=>{S.flags.validated=true;},reply:["sales","Two of three ran trials. One pays a premium, but only if the product performs better in their line, not just because it's green."],lesson:"Spending years improving technology before knowing whether customers will pay is a classic trap; many startups raised €50M+ without in-depth market validation. Use the Villain Test: would a buyer who doesn't care about climate still buy?",src:"Invest-NL Agrifood p9, p46; Road p52-53"},
+      {label:"Optimise first, customers later",v:"bad",fx:S=>{S.month+=9;S.flags.noValidation=true;},reply:["cto","Yield is up 30%. Unfortunately one customer has since qualified a competitor."],lesson:"Tech-first, customer-late is the classic trap. Customers involved too late means years of capital spent on something nobody has agreed to pay for.",src:"Invest-NL Agrifood p9, p46"}]},
+  {id:"scale",at:"demo",title:"How big should the first plant be?",
+    setup:[["vc","Go world-scale. The big institutional cheques want big plants, and unit economics only work at scale."],["cto","A 100× jump from the demo? We'd be locking in flaws we haven't found yet."]],
+    choices:[
+      {label:"A moderate first plant (~10× the demo), with an expansion option",v:"good",reply:["cto","Good. We design the site for a second line from day one."],lesson:"Investors rate a moderate initial production scale as highly important. AFRY recommends designing in an expansion option and testing economics under a conservative ramp-up.",src:"AFRY p29-30; BCG p7"},
+      {label:"World-scale from day one",v:"ok",fx:S=>{S.capexMult*=1.4;S.mods.tech+=.15;},reply:["vc","Now we're talking. Suppliers and offtakers will take us seriously."],lesson:"Fast scale-up can secure supply-chain leverage, offtakes and $100M+ cheques (Stegra's strategy). Gradual scale-up avoids locking in fatal flaws. You chose leverage over safety.",src:"Road p34, p53-54"},
+      {label:"Stack modular units instead of one big unit",v:"good",fx:S=>{S.mods.tech-=.1;S.mods.ramp-=.15;},reply:["cto","Ten proven units side by side. If one fails, nine still run."],lesson:"'Stacking, not scaling': many proven small units lower integration risk. Modularity, off-the-shelf components and redundancy comfort investors.",src:"Road p54; OCED p25, p32"}]},
+  {id:"policyfit",at:"demo",title:"The regulation doesn't fit your product",
+    setup:[["policy","The draft rules classify your product in a category that doesn't count toward the new mandate. Your buyers' compliance demand disappears."],["cfo","We can't afford a policy team right now. We need every euro for the plant."]],
+    choices:[
+      {label:"Hire a policy adviser and engage regulators now",v:"good",fx:S=>{S.flags.policyFit=true;S.month+=2;S.stake*=.99;},reply:["policy","The final text has a definition that includes you. It took four meetings and a technical annex."],lesson:"UBQ's material was excluded from recycled-content mandates by its classification, and LanzaTech didn't fit EU categories; both spent years on it. Founders who neglect policy until they need to sell pay later.",src:"Road p21, p28, p38-39"},
+      {label:"Ignore it; the product will speak for itself",v:"bad",fx:S=>{S.mods.policy+=.3;},reply:["policy","The rules were adopted as drafted. Your buyers can't count your product toward their targets."],lesson:"Regulatory misclassification can remove compliance-driven demand. Underestimating regulation is a recurring root cause of FOAK failure.",src:"Road p28, p39"}]},
+  {id:"noOfftake",at:"dev",prio:3,cond:S=>!S.flags.offtakeBinding,title:"Chicken and egg",
+    setup:[["pfbank","No binding offtake, no debt. That's not negotiable."],["buyer","We'll commit when the plant is proven. Nobody signs a binding contract for a plant that doesn't exist yet."]],
+    choices:[
+      {label:"Offer the buyer equity in the project plus a price floor and ceiling, for a smaller binding volume",v:"good",fx:S=>{S.flags.offtakeBinding=true;S.flags.strategicPartner=true;S.stake*=.97;S.month+=4;},reply:["buyer","With a stake in the plant and a price ceiling, my board can sign. We'll take 40% of output, take-or-pay."],lesson:"Offtakers that also invest are a leg of the three-legged stool. Price floors in exchange for ceilings made deals possible for LanzaTech and Twelve. Build commitments step by step: trials, development agreement, qualification, then conditional and finally bankable volumes.",src:"TNI p7-9; OCED p14; Invest-NL Agrifood p43"},
+      {label:"Join a demand aggregator that pools buyers' commitments",v:"ok",show:S=>["saf","ldes"].includes(S.sector),fx:S=>{S.flags.offtakeBinding=true;S.month+=6;},reply:["sales","The buyers' club signed. It took six months of negotiation across twelve members."],lesson:"Demand aggregators such as SABA (aviation) and advance market commitments such as Frontier pool demand. They are bankable only if enforceable and creditworthy.",src:"BCG p10, p12"},
+      {label:"Go to financing on letters of intent and hope",v:"bad",fx:S=>{S.flags.loi=true;},reply:["pfbank","I'll read them, but my credit committee won't count them."],lesson:"Several FOAKs went ahead on LOIs and ended in restructuring or suspension. 'Nobody signs a binding offtake seven years in the future', so you have to create commitment some other way.",src:"AFRY p21; EIB p19"}]},
+  {id:"deadlock",at:"dev",prio:2,cond:S=>S.flags.offtakeBinding&&!S.flags.singleOfftaker,title:"Take-or-pay meets delay penalties",
+    setup:[["pfbank","We need firm take-or-pay. No take-or-pay, no debt."],["buyer","If we commit to take-or-pay, we want heavy penalties for every day you're late. Our own customers depend on this."],["pfbank","Uncapped delay penalties? Then the cash flows aren't bankable either."]],
+    choices:[
+      {label:"Propose a 3-6 month commissioning window, capped penalties, take-or-extend volumes and a price floor/ceiling",v:"good",fx:S=>{S.month+=2;},reply:["buyer","Capped penalties and a floor/ceiling we can live with. Our lawyers will paper it."],lesson:"Banks found steep delay penalties completely unacceptable. Flexible timelines, index-linked pricing and transparent risk sharing between developer, lender and offtaker break the deadlock; early-demo contracts used commissioning windows and take-or-extend.",src:"AFRY p21, p31; OCED p14"},
+      {label:"Accept the buyer's full penalties to keep the take-or-pay",v:"bad",fx:S=>{S.flags.penaltyClash=true;},reply:["pfbank","Then I can't lend against these contracts."],lesson:"Take-or-pay demanded by lenders, answered with penalties demanded by buyers, is a classic FOAK deadlock. Accepting uncapped penalties moves the risk straight back onto the lenders.",src:"AFRY p21"},
+      {label:"Drop take-or-pay to keep the buyer happy",v:"bad",fx:S=>{S.flags.offtakeBinding=false;S.flags.loi=true;},reply:["buyer","Great, a flexible framework agreement it is."],lesson:"Without firm volume commitments lenders have nothing to underwrite. You traded bankability for goodwill.",src:"AFRY p20-21; TUM p19"}]},
+  {id:"prepay",at:"dev",prio:2,cond:S=>S.flags.offtakeBinding,title:"The prepayments that don't count",
+    setup:[["sales","Great news: I sold prepayment contracts for 120% of the plant's output. They're flexible across all our future plants."],["pfbank","We only underwrite contracts tied to this plant. Flexible ones don't count."]],
+    choices:[
+      {label:"Re-paper the contracts as asset-specific for this plant",v:"good",fx:S=>{S.month+=3;},reply:["sales","Two buyers grumbled, but all signed the plant-specific version."],lesson:"One DOE case company sold flexible, non-asset-specific prepay contracts; lenders would only underwrite asset-specific ones.",src:"OCED p17"},
+      {label:"Argue the flexible contracts are just as good",v:"bad",fx:S=>{S.flags.offtakeWeak=true;},reply:["pfbank","They're not. Not for a non-recourse loan."],lesson:"Lenders underwrite cash flows of the financed asset only. Flexibility for you means uncertainty for them.",src:"OCED p17"}]},
+  {id:"feed",at:"dev",prio:1,cond:S=>!S.flags.epcWrap,title:"A top-tier name for the FEED?",
+    setup:[["lenderAdv","Lenders would feel more comfortable if a top-tier EPC did your front-end engineering design."],["cto","They'll charge triple, put us at the bottom of their queue, and we'll lose control of our own process."]],
+    choices:[
+      {label:"Keep the design owner-led and have the independent engineer validate it",v:"good",fx:S=>{if(!S.flags.ie)S.month+=3;S.flags.ie=true;},reply:["lenderAdv","With an independent engineer's sign-off, that works for us."],lesson:"Six of eight DOE case companies kept substantial engineering control. Third-party validation gives lenders comfort without handing your learning loop to a contractor.",src:"OCED p12, p20; BCG p9"},
+      {label:"Hire the top-tier EPC for the FEED",v:"bad",fx:S=>{S.capexMult*=1.05;S.month+=6;},reply:["cto","Six months later: a beautiful binder, a higher estimate, and a design we'll have to rework."],lesson:"One company hired a top-tier EPC for its FEED to look bankable, suffered high costs and delays, and pulled engineering back in-house.",src:"OCED p21"}]},
+  {id:"freeze",at:"close",title:"Start building now?",
+    setup:[["board","The money's in. Start everything now; every month costs us."],["cto","The design isn't frozen. Changes during construction cost a hundred times what they cost on paper."]],
+    choices:[
+      {label:"Freeze long-lead items first, then start package by package",v:"good",fx:S=>{S.month+=2;},reply:["cto","Compressors and reactors are ordered, and the rest freezes in stages."],lesson:"Front-load flexibility, then be rigid: freeze long-lead items first. The cost of change runs 1:10:100 from design to detailed engineering to execution.",src:"Road p54-55"},
+      {label:"Start everything now",v:"bad",vFor:S=>["pf","ldes"].includes(S.sector)?"ok":"bad",fx:S=>{S.month-=4;S.flags.rework=true;S.mods.capex+=.2;},reply:["board","That's the spirit."],lesson:"Starting construction before designs were complete caused rework, overruns and delays at Vogtle. Early starts can work for modular demos, but are disastrous for complex plants.",src:"OCED p12, p21-22"},
+      {label:"Wait for 100% detailed design",v:"ok",fx:S=>{S.month+=8;},reply:["board","Eight months of burn with nothing built. The investors are asking questions."],lesson:"Safe but slow. The playbook is staged freezing: lock what's on the critical path first and keep the rest flexible.",src:"Road p54-55"}]},
+  {id:"leaders",at:"close",title:"A new CEO for the build?",
+    setup:[["board","Now that we've closed, let's bring in a big-company CEO and rebuild the team for the build phase."],["cto","The people who ran the demo know every weak spot in this process."]],
+    choices:[
+      {label:"Keep the leadership, add an experienced plant manager, and pair pilot staff with the EPC",v:"good",reply:["cto","Our pilot operators sit with the contractor's commissioning team from day one."],lesson:"New management after FID, late hiring and the R&D-to-industrial transition cost FOAKs know-how and accountability. AFRY recommends leadership continuity and keeping pilot staff involved in design and commissioning.",src:"AFRY p23, p30-31"},
+      {label:"Replace the team with big-company executives",v:"bad",fx:S=>{S.mods.tech+=.2;S.mods.ramp+=.15;},reply:["board","Impressive CVs. They'll need a few months to learn the process."],lesson:"Organisational change after FID is one of AFRY's eleven FOAK patterns: lost know-how and weaker accountability show up later as 'unexpected' ramp-up problems.",src:"AFRY p23-24"}]},
+  /* regional conflicts */
+  {id:"usGrant",at:"demo",region:"us",title:"A federal award, with strings",
+    setup:[["doe","Congratulations: your FOAK was selected for a federal award covering about a quarter of the plant."],["cfo","It comes with a NEPA review, and Washington just terminated 223 projects. If we build the plan around it and it's cut..."]],
+    choices:[
+      {label:"Accept it, but structure the stack so the project survives without it",v:"good",fx:S=>{S.flags.bigGrant=true;S.month+=3;},reply:["cfo","Base case without the award, award as upside. Our lenders' downside case passes either way."],lesson:"Treat policy as an underwriting input and a bridge, not permanent support. Stress-test the downside and avoid depending on a single subsidy regime. DOE terminated 223 projects worth over $7.5B in October 2025.",src:"BCG p9, p14, p16"},
+      {label:"Build the whole plan around it",v:"bad",fx:S=>{S.flags.bigGrant=true;S.flags.grantDependent=true;},reply:["doe","We look forward to working with you, subject to appropriations."],lesson:"Political cutbacks can collapse financing pipelines without warning. A plan that only works with one subsidy is fragile.",src:"Road p32; BCG p14"},
+      {label:"Decline it to move faster",v:"ok",reply:["cfo","No NEPA, no reporting, no grant either."],lesson:"At least two DOE case companies skipped government funding because it would slow their raise and delivery. It's a legitimate trade, but you lose non-dilutive money and the diligence halo.",src:"OCED p16"}]},
+  {id:"nlGrid",at:"demo",region:"nl",title:"No grid capacity until 2031",
+    setup:[["gridop","We can't offer new connection capacity at your greenfield site before 2031."],["cfo","And energy here costs much more than in the Nordics or the US."]],
+    choices:[
+      {label:"Co-locate at an industrial cluster with an existing connection and shared utilities",v:"good",fx:S=>{S.flags.colocate=true;S.month+=2;},reply:["gridop","There's spare capacity at the cluster site. You can connect next year."],lesson:"Clustering demo and commercial plants lets them share utilities and permits, and brownfield sites move faster through permitting.",src:"Invest-NL Agrifood p40-41; AFRY p27"},
+      {label:"Build the plant elsewhere in Europe; keep R&D and control in the Netherlands",v:"ok",fx:S=>{S.flags.colocate=true;S.flags.abroad=true;},reply:["cfo","Cheaper power abroad. But Dutch public co-investment won't follow us there."],lesson:"Invest-NL suggests producing where the economics are best within European value chains while keeping control points in the Netherlands. The trade-off: national instruments stay home.",src:"Invest-NL Agrifood p7, p12, p42"},
+      {label:"Wait in the queue at the greenfield site",v:"bad",fx:S=>{S.month+=12;S.flags.colocate=true;},reply:["gridop","You're on the list."],lesson:"A year of burn for a grid connection. External interfaces such as local infrastructure are among the most-cited FOAK integration problems.",src:"AFRY p14; Invest-NL Agrifood p41"}]},
+  {id:"frRegion",at:"demo",region:"france",title:"Move to where the ecosystem is?",
+    setup:[["bpi","Première Usine can fund a real share of your first plant, if it's built in France."],["partnerFR","Grand Est has the feedstock, a demo facility and us as a partner. But you'd have to move your site plan."],["cfo","Our pilot was elsewhere. Moving costs months."]],
+    choices:[
+      {label:"Build where the partner, feedstock and demo facilities are",v:"good",fx:S=>{S.flags.strategicPartner=true;S.month+=4;},reply:["partnerFR","Welcome. We'll take a stake and supply the feedstock."],lesson:"Biofibre built pilots in Bavaria, found no local industrial partner, and formed a JV with a French company to build its first plant in Grand Est. Regions with feedstock, industrial partners and corporate investors win FOAKs; funding alone isn't enough.",src:"EIB p31, p36-39"},
+      {label:"Stay where you are, without a partner",v:"ok",reply:["cfo","We keep our schedule, and we keep all the risk."],lesson:"Generous funding without the ecosystem fails, as Bavaria's scale-up programme showed when too few companies applied.",src:"EIB p36-39"}]},
+  {id:"deBanks",at:"dev",region:"germany",prio:5,title:"The banks don't know your contracts",
+    setup:[["gerbank","Our credit committee doesn't know these contract structures, and capital rules make unproven assets expensive for us. We'd do 30% of the project, at most."],["publender","We could anchor the senior debt and standardise the documentation for the other banks."]],
+    choices:[
+      {label:"Let the public lender anchor the debt and standardise the documentation",v:"good",fx:S=>{S.flags.govAnchor=true;S.month+=3;},reply:["gerbank","With a public anchor lender and standard documents, we can go to 40%."],lesson:"German interviewees describe risk-averse banks unfamiliar with non-standard contracts, and Basel risk weights make holding unproven assets punitive. Public anchors, shared due diligence and standardised contracts help.",src:"TUM p17-19, p24-25"},
+      {label:"Shop the deal to more commercial banks",v:"ok",fx:S=>{S.month+=6;},reply:["gerbank","Six months later: same answer from four more banks."],lesson:"The constraint is structural (risk weights, unfamiliar contracts), not one bank's appetite.",src:"TUM p17-19"},
+      {label:"Accept tougher terms: a 3× DSCR and tight covenants",v:"ok",fx:S=>{S.flags.strictCovenants=true;},reply:["gerbank","Agreed. Any shortfall in year one trips a covenant."],lesson:"FOAK lenders ask for DSCR of 1.5-2×; one commodity-exposed company faced 3×. Tight covenants turn a slow ramp-up into a default.",src:"OCED p19"}]},
+  {id:"nordicsNtp",at:"close",region:"nordics",title:"Reserve the long-lead slots?",
+    setup:[["supplier","Our production slots for 2028 are going fast. Commit now, or wait 18 months."],["board","Financial close slipped again. Do we really commit money before every lender has signed?"]],
+    choices:[
+      {label:"Issue limited notices to proceed on long-lead items only",v:"good",fx:S=>{S.month-=2;},reply:["supplier","Slots reserved, with an exit fee if you cancel before close."],lesson:"Stegra kept contractors and suppliers engaged through a slipping financial close with transparent communication and limited notices to proceed. Long-lead procurement can take up to 12 months.",src:"OCED p22-23, p32"},
+      {label:"Commit full orders now",v:"bad",fx:S=>{S.stake*=.95;S.mods.capex+=.1;},reply:["board","Now we're exposed if anything slips."],lesson:"Full commitments before close put equity at risk on a schedule you don't control.",src:"OCED p22-23"},
+      {label:"Wait for every signature",v:"ok",fx:S=>{S.month+=8;},reply:["supplier","Next available slot: late 2029."],lesson:"Safe but slow: long-lead items set the critical path.",src:"OCED p22"}]}
+];
+function pickDilemma(k){
+  const pool=DILEMMAS.filter(d=>d.at===k&&(!d.region||d.region===S.region)&&(!d.cond||d.cond(S))&&!S.usedD.includes(d.id));
+  if(!pool.length)return null;
+  const reg=pool.filter(d=>d.region);if(reg.length)return reg[0];
+  const top=Math.max(...pool.map(d=>d.prio||0));const best=pool.filter(d=>(d.prio||0)===top);
+  return best[Math.floor(Math.random()*best.length)];
+}
+
+/* ---------------- Committee questions ---------------- */
+const QUIZ=[
+  {at:"pilot",p:"vc",q:"Best-practice scale-up per step is roughly:",o:["~10×","~100×","~2×"],why:"Engineers scale about one order of magnitude per step (5-20×) unless evidence supports more.",src:"BCG p4, p7"},
+  {at:"pilot",p:"vc",q:"The 'three-legged stool' behind most successful FOAKs is:",o:["VC syndicate, corporate offtake/equity, government grants or loans","Bank debt, bonds, IPO","Angels, crowdfunding, venture debt"],why:"Almost all successful FOAKs in the 18 case studies combined those three sources.",src:"TNI p1, p7-9"},
+  {at:"pilot",p:"agency",q:"Where on the readiness ladder is the 'valley of death'?",o:["TRL 7-8: demo and FOAK","TRL 1-3: concept","TRL 9+: mature"],why:"VC peaks around TRL 4; private equity and infrastructure only arrive from TRL 9. The trough sits at 7-8.",src:"TNI p4-5"},
+  {at:"demo",p:"lessor",q:"Why will an equipment lessor fund your demo when a bank won't?",o:["It holds a lien on resellable equipment, not on whether your process works","It is subsidised by the government","It charges no interest"],why:"Equipment finance avoids the binary does-it-work risk. Solugen and Via funded up to a third of their demos this way.",src:"OCED p17"},
+  {at:"demo",p:"infragrowth",q:"Across 30 European FOAKs, the largest disclosed private source was:",o:["Strategic (corporate) equity","Venture capital","Commercial bank debt"],why:"Strategic equity contributed €605M across 10 plants; VC only €60M across 2.",src:"AFRY p16-17"},
+  {at:"demo",p:"pfbank",q:"Being 'bankable', not just 'financeable', requires:",o:["Offtake, EPC contracts, collateral and credit enhancement","A great team and a big VC round","A grant award"],why:"Financeable means you can raise grants and equity; bankable means cheap debt, which depends on external prerequisites.",src:"TUM p21"},
+  {at:"dev",p:"pfbank",q:"Typical loan-to-value for FOAK project debt is:",o:["20-60%","about 80%, like solar","90% or more"],why:"FOAK lenders go to 20-60%, against roughly 80% for mature solar.",src:"OCED p19"},
+  {at:"dev",p:"pfbank",q:"What debt-service cover ratio do FOAK lenders typically demand?",o:["1.5-2× or more","1.0×","1.1-1.2×"],why:"FOAK lenders want 1.5-2×+, sometimes 3× with commodity exposure; mature projects need 1.2-1.5×.",src:"OCED p19"},
+  {at:"dev",p:"ie",q:"What contingency should a FOAK carry?",o:["25-30%","5-10%","10-15%"],why:"10-15% is what's usually modelled, and AFRY calls it too optimistic. Lenders expect 25-30% at FOAK.",src:"OCED p19; AFRY p15"},
+  {at:"dev",p:"publender",q:"Who has led FOAK project lending so far?",o:["Government-backed lenders: DOE LPO, EIB, export credit agencies","Commercial banks","Pension funds"],why:"FOAK project lending has been dominated by government-backed agencies, with 2+ years of diligence.",src:"OCED p19"},
+  {at:"close",p:"ie",q:"Of 16 European FOAKs with data, how many overran capex?",o:["10","3","16"],why:"10 of 16 overran, two by more than 80%.",src:"AFRY p15"},
+  {at:"close",p:"ie",q:"Business cases assume 6-12 months of ramp-up. What's common in reality?",o:["About 3 years","About 3 months","About 12 months"],why:"A significant share of FOAKs need about three years; 61% ran 12+ months late.",src:"AFRY p12"},
+  {at:"close",p:"infragrowth",q:"Which of these is NOT one of BCG's three capital-allocation errors?",o:["Grants at pilot stage","Venture equity absorbing project execution risk","Senior debt entering before downside is bounded"],why:"BCG's three errors: venture equity taking execution risk, senior debt before downside is bounded, infrastructure capital before operating proof.",src:"BCG p10"},
+  {at:"close",p:"epc",q:"Why do EPC contractors avoid first-of-a-kind risk?",o:["They work on 1-3% margins","They aren't allowed to by law","They're paid in equity"],why:"With 1-3% margins, one bad FOAK can wipe out years of profit, so EPCs avoid untested technology.",src:"TNI p3"},
+  {at:"dev",p:"buyer",sector:["biochem"],q:"How much green premium will bio-based chemical buyers realistically pay?",o:["5-10%","50%+","They pay any premium for green"],why:"Realistically 5-10%, mostly from consumers, while many products cost 2-3× their fossil equivalents.",src:"EIB p18-19"},
+  {at:"demo",p:"reg",sector:["pf"],q:"How long does EU Novel Food approval typically take?",o:["2-6+ years","6 months","Under a year"],why:"EFSA takes 2-6+ years, 1-3 years longer than the US route.",src:"Invest-NL Agrifood p40"}
+];
+function pickQuiz(k){
+  const pool=QUIZ.filter((q,i)=>q.at===k&&(!q.sector||q.sector.includes(S.sector))&&!S.usedQ.includes(i));
+  if(!pool.length)return null;
+  const sec=pool.filter(q=>q.sector);const q=sec.length?sec[0]:pool[Math.floor(Math.random()*pool.length)];
+  const idx=QUIZ.indexOf(q);const order=q.o.map((_,i)=>i).sort(()=>Math.random()-.5);
+  return{...q,idx,order};
+}
+
+/* ---------------- Interludes ---------------- */
+function startInterlude(k){
+  const d=pickDilemma(k),q=pickQuiz(k);let bonus=false;
+  if(k==="close"&&S.cred>=2&&!S.credBonus){S.credBonus=true;S.res+=1;bonus=true;toast("+1 ♥ RESERVE ACCOUNT","good");sfx("up");}
+  if(!d&&!q){nextStage();return;}
+  if(d)S.usedD.push(d.id);if(q)S.usedQ.push(q.idx);
+  S.inter={k,d,q,step:d?"d":"q",pick:null,ans:null,bonus};
+  render();window.scrollTo(0,0);
+}
+function dVerdict(c){return c.vFor?c.vFor(S):c.v;}
+function interScreen(){
+  const I=S.inter;let h="";
+  if(I.bonus)h+=`<div class="feedback good fade">${chip("good")}<span class="lesson"><b>Credibility pays.</b> You answered the committees well, so your lenders agree a debt-service reserve account: +1 resilience.</span></div>`;
+  if(I.step==="d"){
+    const d=I.d;
+    h+=`<div class="story fade"><span class="eyebrow">Month ${Math.round(S.month)} · Conflict</span><h2>${esc(d.title)}</h2></div>`;
+    h+=`<div class="convo">${d.setup.map(([pk,t])=>bubble(P[pk],t,false)).join("")}</div>`;
+    const ch=d.choices.filter(c=>!c.show||c.show(S));
+    if(I.pick==null){
+      h+=`<p>What do you do?</p><div class="cards">${ch.map((c,i)=>`<button class="card" data-dil="${i}"><span class="t">${esc(c.label)}</span></button>`).join("")}</div>`;
+    }else{
+      const c=ch[I.pick],v=dVerdict(c);
+      h+=`<div class="feedback fade ${({good:"good",ok:"ok",bad:"bad"})[v]}"><div class="convo">${bubble(P.you,c.label+".",true)}${bubble(P[c.reply[0]],c.reply[1],false)}</div><div class="why">${chip(v)}<span class="lesson"><b>Why:</b> ${esc(c.lesson)}</span><span class="src">${esc(c.src)}</span></div></div>
+      <div class="row"><button class="btn" id="interNext">${I.q?"Next: committee question":"Continue"}</button></div>`;
+    }
+  }else{
+    const q=I.q,asker=P[q.p];
+    h+=`<div class="story fade"><span class="eyebrow">Month ${Math.round(S.month)} · Committee question</span><h2>Can you answer this?</h2><p>Right answers build credibility (★). Get two of the first three right and your lenders grant a reserve account.</p></div>`;
+    h+=`<div class="convo">${bubble(asker,q.q,false)}</div>`;
+    if(I.ans==null){
+      h+=`<div class="cards">${q.order.map(i=>`<button class="card" data-quiz="${i}"><span class="t">${esc(q.o[i])}</span></button>`).join("")}</div>`;
+    }else{
+      const right=I.ans===0;
+      h+=`<div class="cards">${q.order.map(i=>`<button class="card ${i===0?"res-good":i===I.ans?"res-bad":"res-neutral"}" disabled>${i===0?chip("good"):i===I.ans?`<span class="chip bad">Your answer</span>`:""}<span class="t">${esc(q.o[i])}</span></button>`).join("")}</div>
+      <div class="feedback fade ${right?"good":"bad"}"><div class="convo">${bubble(asker,right?"Correct. "+q.why:"Not quite. "+q.why,false)}</div><span class="src">${esc(q.src)}</span></div>
+      <div class="row"><button class="btn" id="interNext">Continue</button></div>`;
+    }
+  }
+  return h;
+}
+function bindInter(){
+  app.querySelectorAll("[data-dil]").forEach(b=>b.onclick=()=>{
+    const I=S.inter,ch=I.d.choices.filter(c=>!c.show||c.show(S)),c=ch[+b.dataset.dil];
+    I.pick=+b.dataset.dil;if(c.fx)c.fx(S);{const vv=dVerdict(c);sfx(vv==="good"?"up":vv==="bad"?"no":"blip");}
+    record("Conflict",`${I.d.title} ${c.label}`,dVerdict(c),c.lesson,c.src);render();});
+  app.querySelectorAll("[data-quiz]").forEach(b=>b.onclick=()=>{
+    const I=S.inter;I.ans=+b.dataset.quiz;const right=I.ans===0;S.quizCount++;if(right){S.cred++;S.quizRight++;toast("+1 ★ CREDIBILITY","good");sfx("up");}else{toast("WRONG ANSWER","bad");sfx("no");}
+    record("Quiz",I.q.q+" "+I.q.o[0],right?"good":"bad",I.q.why,I.q.src);render();});
+  const n=document.getElementById("interNext");
+  if(n)n.onclick=()=>{const I=S.inter;if(I.step==="d"&&I.q){I.step="q";render();window.scrollTo(0,0);}else{S.inter=null;nextStage();}};
+}
+
+/* ---------------- Market wire ---------------- */
+const NEWS={
+  pilot:[["Climate VC money is plentiful early on: VC was 47% of climate private capital raised in 2023, against 17% across all sectors.","TNI p5"],["1,600+ climate VC-backed startups compete for capital; hydrogen alone has 240, averaging about $30M each.","TNI p6"]],
+  demo:[["Only 53.5% of companies get from demonstration to full commercial readiness, taking 6.1 years on average.","Road p10"],["Since the 2021 peak, deal sizes have fallen and investors favour capital-light scale-up: shared facilities, CMOs, brownfield.","Invest-NL Agrifood p39"]],
+  dev:[["Northvolt files for bankruptcy in March 2025 despite raising about $9B.","TNI p26"],["83% of surveyed FOAKs report significant delays; 44% by a year or more.","Road p32"]],
+  close:[["US climate VC and growth funding rose 27% in 2025; Europe fell 13%, and Series C rounds fell 32%.","BCG p5"],["Breakthrough Energy Catalyst reportedly winds down, leaving a project-finance gap for FOAKs.","BCG p5"]],
+  build:[["EU battery gigafactories average more than 10 months of start-of-production delay.","Road p32"],["Stegra targets a three-year construction period for its Boden green steel plant.","OCED p22"]]
+};
+const NEWS_REGION={us:[["DOE terminates 223 projects worth over $7.5B (October 2025).","BCG p16"]],nordics:[["Stegra secures its environmental permit in 6 months, against a typical 5-10 years.","OCED p32"]],nl:[["Grid congestion and high energy prices push Dutch biotech manufacturing abroad.","Invest-NL Agrifood p41"]],france:[["Première Usine: 51 projects, over €1B invested from €240M of public money.","EIB p36"]],germany:[["German climate-tech interviewees: banks are risk-averse and unfamiliar with non-standard contracts.","TUM p18"]]};
+function newsLine(k){
+  S.news=S.news||{};
+  if(!S.news[k]){const pool=[...(NEWS[k]||[])];if(k==="dev"||k==="close")pool.push(...(NEWS_REGION[S.region]||[]));S.news[k]=pool[Math.floor(Math.random()*pool.length)];}
+  const [t,s]=S.news[k];return `<p class="wire"><span class="eyebrow">Market wire</span> ${esc(t)} <span class="src">${esc(s)}</span></p>`;
+}
+
+/* ---------------- End-of-game extras ---------------- */
+function badges(){
+  const d=S.decisions,f=S.flags,has=(re,v)=>d.some(x=>re.test(x.label)&&(!v||x.v===v));
+  const stack=(S.foakStack||[]).map(s=>s.id);
+  const list=[
+    ["Three-legged stool","VC, a corporate partner and public money all in your stack",(has(/Series A|Series B/,"good"))&&(f.strategicPartner||f.stratEquity)&&(has(/grant|award|aid|Première/i,"good"))],
+    ["Bankable","Closed senior project debt",stack.includes("senior")],
+    ["Capital-light","Used shared facilities and equipment leasing",has(/^Run the pilot at/,"good")&&has(/Equipment lease/,"good")],
+    ["No traps","Never fell for a trap",!d.some(x=>x.v==="trap")],
+    ["Diplomat","Resolved every conflict the right way",d.filter(x=>x.stage==="Conflict").every(x=>x.v==="good")&&d.some(x=>x.stage==="Conflict")],
+    ["Know your numbers","Answered every committee question correctly",S.quizCount>0&&S.quizRight===S.quizCount],
+    ["Local hero","Used your region's specialty instrument",(REGIONS[S.region].closeExtra&&stack.includes(REGIONS[S.region].closeExtra.id))||(S.region==="germany"&&f.ccfd)],
+    ["Survivor","Reached commercial operation with one resilience point left",!S.failed&&S.res===1]
+  ];
+  return list.filter(b=>b[2]);
+}
+function finalScore(pct){
+  if(S.failed)return Math.round(pct*2+S.quizRight*20);
+  return Math.round(400+pct*3+Math.min(S.stake,40)*4+S.quizRight*25-Math.max(0,S.month-110)*2);
+}
+function endExtras(pct){
+  const sc=finalScore(pct),key=`foak-best-${S.sector}-${S.region}-${S.diff}`;let best=null,isNew=false;
+  try{best=+localStorage.getItem(key)||null;if(!best||sc>best){localStorage.setItem(key,sc);isNew=!!best||true;}}catch(e){}
+  const b=badges();
+  const R=REGIONS[S.region],n=N();
+  const path=[
+    ["Pilot",`${n.grantSmall} + specialist VC + ${SEC().N.partnerSite}`],
+    ["Demo",`VC syndicate + strategic equity with a joint development agreement + ${n.grantDemo} + equipment lease`],
+    ["Development",`Binding take-or-pay offtake, an experienced owner team, multi-package EPC with performance guarantees, independent engineer, 25-30% contingency${S.region==="germany"?", a carbon contract for difference":""}`],
+    ["FOAK close",`Grant + catalytic first loss + offtaker and project equity in the SPV${R.closeExtra?` + ${R.closeExtra.label.toLowerCase()}`:""} + ${n.govLoan} + senior bank debt`],
+    ["Construction","Mitigations prepared before FID; strategic partners and flexible public lenders as backstops"]
+  ];
+  const mistakes=S.decisions.filter(x=>(x.v==="trap"||x.v==="bad")&&x.stage!=="Quiz").slice(0,3);
+  return `<div class="grid2"><div class="stat"><span class="k">Score</span><span class="v">${sc}</span></div><div class="stat"><span class="k">Best · ${esc(R.name)} · ${esc(DF().name)}</span><span class="v">${best&&best>sc?best:sc}${(!best||sc>=best)?" ★":""}</span></div><div class="stat"><span class="k">Committee ★</span><span class="v">${S.quizRight}/${S.quizCount}</span></div><div class="stat"><span class="k">Badges</span><span class="v">${b.length}/8</span></div></div>
+  ${b.length?`<div class="badges">${b.map(x=>`<span class="badge" title="${esc(x[1])}"><b>${esc(x[0])}</b> ${esc(x[1])}</span>`).join("")}</div>`:""}
+  ${mistakes.length?`<div class="story"><span class="eyebrow">Your three biggest lessons</span>${mistakes.map(m=>`<p class="note"><b>${esc(m.label)}.</b> ${esc(m.lesson)} <span class="src">${esc(m.src)}</span></p>`).join("")}</div>`:""}
+  <div class="story"><span class="eyebrow">Textbook path · ${esc(SEC().name)} in ${esc(R.name)}</span><div class="path">${path.map(([a,t])=>`<div><b>${a}</b><span>${esc(t)}</span></div>`).join("")}</div><p class="src">Synthesis of TNI p7-9; TUM p21; BCG p9-12; OCED p14-20; AFRY p30-31</p></div>`;
+}
+
+function guideBox(k){
+  const g=GUIDE[k];if(!g)return "";
+  const wide=(window.matchMedia&&matchMedia("(min-width: 1000px)").matches);
+  const open=(S.guideOpen!=null?S.guideOpen:wide)?"open":"";
+  return `<details class="guide" ${open}><summary>Field guide · ${STAGE_NAMES[k]}</summary><div class="gbody">${g.map(x=>`<div class="gitem"><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p><span class="src">${esc(x.src)}</span></div>`).join("")}</div></details>`;
+}
+</script>
+
+<script>
+/* ================= 8-bit layer: sprites, celebrations, particles, sound ================= */
+const PAL={K:"#1a1c2c",W:"#f4f4f4",Y:"#ffcd75",O:"#ef7d57",R:"#b13e53",G:"#38b764",g:"#a7f070",B:"#3b5dc9",b:"#41a6f6",c:"#73eff7",S:"#94b0c2",s:"#566c86",D:"#333c57",N:"#29366f",n:"#7a4a2a",m:"#c4834a"};
+const SPR={
+  shovel:["....KKKKKK....","....KnnnnK....","....KnKKnK....","....KKnnKK....",".....KmnK.....",".....KmnK.....",".....KmnK.....",".....KmnK.....",".....KmnK.....",".....KmnK.....","...KKKmnKKK...","..KSSSSSSSSK..","..KSWSSSSSsK..","..KSWSSSSSsK..","..KSSSSSSSsK..","...KSSSSSsK...","....KSSSsK....",".....KSsK.....","......KK......"],
+  flask:["...KKKKKK...","....KSSK....","....KWcK....","....KWcK....","...KWWccK...","..KWWWWccK..",".KWWWWWWccK.",".KggggggggK.","KgGgggGgggGK","KggggGgggggK","KgGgggggGggK",".KKKKKKKKKK."],
+  factory:["..............KK..",".............KDDK.","..KK.........KDDK.",".KDDK........KDDK.",".KDDK..KK....KDDK.",".KDDK.KDDK...KDDK.","KKKKKKKKKKKKKKKKKK","KNNNKNNNKNNNKNNNNK","KSSSSSSSSSSSSSSSSK","KSYYSSYYSSYYSSYYSK","KSYYSSYYSSYYSSYYSK","KSSSSSSSSSSSSSSSSK","KSYYSSYYSSKKKKSSSK","KSYYSSYYSSKnnKSSSK","KSSSSSSSSSKnnKSSSK","KKKKKKKKKKKKKKKKKK"],
+  bank:[".......KK.......",".....KKYYKK.....","...KKYYYYYYKK...",".KKYYYYYYYYYYKK.","KKKKKKKKKKKKKKKK","KWWWWWWWWWWWWWWK","KSWSSSWSSWSSSWSK","KSWSSSWSSWSSSWSK","KSWSSSWSSWSSSWSK","KSWSSSWSSWSSSWSK","KKKKKKKKKKKKKKKK","KWWWWWWWWWWWWWWK","KKKKKKKKKKKKKKKK"],
+  contract:[".KKKKKKKKKK.","KWWWWWWWWWWK","KWKKKKKKKWWK","KWWWWWWWWWWK","KWKKKKKKWWWK","KWWWWWWWWWWK","KWKKKKKWWWWK","KWWWWWWWWWWK","KWBBWWWWRRWK","KWWBBWWRRRRK","KWWWWWWWRRWK",".KKKKKKKKKK."],
+  moneybag:["....KK..KK....",".....KKKK.....","......KK......",".....KYYK.....","....KYYYYK....","...KYYYYYYK...","..KYYKKKYYYK..","..KYKYYYYYYK..",".KYKKKKYYYYYK.",".KYYKYYYYYYYK.",".KYKKKKYYYYYK.",".KYYKYYYYYYYK.","..KYYKKKYYYK..","...KYYYYYYK...","....KKKKKK...."],
+  trophy:["KKKKKKKKKKKK","KYYWYYYYYYYK","KKYWYYYYYYKK",".KYYYYYYYOK.","..KYYYYYOK..","...KYYYOK...","....KYOK....","....KYOK....","...KYYYOK...","..KKKKKKKK..","..KNNNNNNK..","..KKKKKKKK.."],
+  cloud:["....KKKK....","..KKSSSSKK..",".KSSSSSSSSK.","KSSSSSSSSSSK","KSsSSSSSSsSK",".KKKKKKKKKK.","..b..b..b...",".b..b..b....","..b..b..b..."],
+  heart:[".KK...KK.","KRRK.KRRK","KRWRKRRRK","KRRRRRRRK",".KRRRRRK.","..KRRRK..","...KRK...","....K...."],
+  lab:["....KKKK......","....KccK......","...KWWccK.....","..KWWWWccK....","..KggggggK..KK",".KgGggGggK.KYK","..KKKKKKKK.KYK","KKKKKKKKKKKKKKK","KSSSSSSSSSSSSSK","KKKKKKKKKKKKKKK"]
+};
+function drawSprite(cv,name,scale){
+  const rows=SPR[name];if(!rows)return;const w=Math.max(...rows.map(r=>r.length)),h=rows.length;
+  cv.width=w;cv.height=h;const x=cv.getContext("2d");x.clearRect(0,0,w,h);
+  rows.forEach((r,j)=>{for(let i=0;i<w;i++){const ch=r[i]||".";if(PAL[ch]){x.fillStyle=PAL[ch];x.fillRect(i,j,1,1);}}});
+  cv.style.width=w*scale+"px";cv.style.height=h*scale+"px";
+}
+
+/* overlay + toast elements live outside #app so re-renders don't touch them */
+const fxRoot=document.createElement("div");fxRoot.id="fx";fxRoot.hidden=true;
+fxRoot.setAttribute("role","dialog");fxRoot.setAttribute("aria-modal","true");fxRoot.setAttribute("aria-labelledby","fxTitle");
+fxRoot.innerHTML=`<canvas id="fxP" aria-hidden="true"></canvas><div class="fx-panel"><div class="fx-level" id="fxLevel"></div><canvas id="fxS" class="fx-sprite" aria-hidden="true"></canvas><h2 id="fxTitle"></h2><p id="fxSub"></p><button class="fx-btn" id="fxGo">CONTINUE ▶</button></div>`;
+document.body.appendChild(fxRoot);
+const toastEl=document.createElement("div");toastEl.id="toast";toastEl.setAttribute("role","status");toastEl.setAttribute("aria-live","polite");document.body.appendChild(toastEl);
+const fxP=document.getElementById("fxP"),fxS=document.getElementById("fxS"),fxGo=document.getElementById("fxGo");
+
+const CELQ=[];let celOpen=false,prevFocus=null;
+function celebrate(sprite,title,sub,opt){CELQ.push({sprite,title,sub,...(opt||{})});if(!celOpen)setTimeout(showCel,220);}
+function showCel(){
+  const c=CELQ.shift();if(!c||celOpen)return;celOpen=true;
+  const scale=Math.max(7,Math.min(12,Math.floor(Math.min(innerWidth,700)/(SPR[c.sprite][0].length*2.4))));
+  drawSprite(fxS,c.sprite,scale);
+  document.getElementById("fxTitle").textContent=c.title;
+  document.getElementById("fxSub").textContent=c.sub||"";
+  document.getElementById("fxLevel").textContent=c.level||"";
+  fxRoot.className=c.sad?"sad":"";fxS.className="fx-sprite "+(c.sprite==="shovel"?"dig":"pop");
+  fxRoot.hidden=false;prevFocus=document.activeElement;fxGo.focus();
+  sfx(c.sad?"sad":"fanfare");startParticles(c.sprite,c.sad);
+}
+function closeCel(){
+  if(!celOpen)return;fxRoot.hidden=true;stopParticles();celOpen=false;
+  if(CELQ.length)setTimeout(showCel,180);else if(prevFocus&&prevFocus.isConnected)prevFocus.focus();
+}
+fxGo.onclick=closeCel;
+fxRoot.addEventListener("click",e=>{if(e.target===fxRoot)closeCel();});
+document.addEventListener("keydown",e=>{if(celOpen&&(e.key==="Escape"||e.key==="Enter"||e.key===" ")){e.preventDefault();closeCel();}});
+
+/* particles: drawn at 1/4 resolution and scaled up, so every particle is a chunky pixel */
+let parts=[],raf=null,pFrame=0,pMode=null;
+const PCOL=["#ffcd75","#ef7d57","#b13e53","#a7f070","#38b764","#41a6f6","#73eff7","#f4f4f4"];
+function startParticles(kind,sad){
+  stopParticles();fxP.width=Math.ceil(innerWidth/4);fxP.height=Math.ceil(innerHeight/4);
+  parts=[];pFrame=0;pMode={kind,sad};
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  raf=requestAnimationFrame(tick);
+}
+function stopParticles(){if(raf)cancelAnimationFrame(raf);raf=null;parts=[];const x=fxP.getContext("2d");x.clearRect(0,0,fxP.width,fxP.height);}
+function add(p){parts.push(Object.assign({vx:0,vy:0,g:0,s:1,life:200,c:"#f4f4f4"},p));}
+function tick(){
+  const W=fxP.width,H=fxP.height,cx=W/2,cy=H*0.42,k=pMode.kind,f=pFrame++;
+  if(pMode.sad){if(f%2===0)add({x:Math.random()*W,y:-2,vy:1.6,s:1,c:"#41a6f6",life:H});}
+  else{
+    if(f<90&&f%2===0)add({x:Math.random()*W,y:-2,vx:(Math.random()-.5)*.4,vy:.4+Math.random()*.5,s:Math.random()<.3?2:1,c:PCOL[f%PCOL.length],life:H*2});
+    if(k==="shovel"&&f%34===0)for(let i=0;i<12;i++)add({x:cx+(Math.random()-.5)*6,y:cy+14,vx:(Math.random()-.5)*2.4,vy:-1-Math.random()*1.6,g:.07,s:Math.random()<.5?2:1,c:Math.random()<.5?"#7a4a2a":"#c4834a",life:90});
+    if((k==="moneybag"||k==="bank")&&f%3===0&&f<240)add({x:Math.random()*W,y:-3,vy:.8+Math.random()*.6,s:2,c:Math.random()<.7?"#ffcd75":"#ef7d57",life:H*2});
+    if(k==="factory"&&f%8===0)add({x:cx+10+(Math.random()-.5)*2,y:cy-14,vx:.15+Math.random()*.2,vy:-.35,s:2,c:Math.random()<.5?"#94b0c2":"#566c86",life:120});
+    if(k==="flask"&&f%6===0)add({x:cx+(Math.random()-.5)*8,y:cy,vy:-.5-Math.random()*.4,s:1,c:"#a7f070",life:110});
+    if((k==="trophy"||k==="contract")&&f%28===0){const bx=W*(.15+Math.random()*.7),by=H*(.1+Math.random()*.3),col=PCOL[Math.floor(Math.random()*PCOL.length)];
+      for(let i=0;i<22;i++){const a=i/22*Math.PI*2;add({x:bx,y:by,vx:Math.cos(a)*1.3,vy:Math.sin(a)*1.3,g:.03,s:1,c:col,life:55});}}
+  }
+  const x=fxP.getContext("2d");x.clearRect(0,0,W,H);
+  parts=parts.filter(p=>p.life-->0&&p.y<H+4);
+  for(const p of parts){p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;x.fillStyle=p.c;x.fillRect(Math.round(p.x),Math.round(p.y),p.s,p.s);}
+  raf=requestAnimationFrame(tick);
+}
+
+/* chiptune sound, off by default */
+let SOUND=false;try{SOUND=localStorage.getItem("foak-sound")==="1";}catch(e){}
+let AC=null;
+function tone(f,t0,d,type,vol,f2){const t=AC.currentTime+t0,o=AC.createOscillator(),g=AC.createGain();o.type=type||"square";o.frequency.setValueAtTime(f,t);if(f2)o.frequency.linearRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(vol||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02);}
+const SFX={
+  coin:()=>{tone(988,0,.08);tone(1319,.08,.22);},
+  up:()=>{tone(523,0,.08);tone(784,.08,.16);},
+  no:()=>{tone(220,0,.28,"sawtooth",.04,110);},
+  blip:()=>tone(660,0,.08),
+  fanfare:()=>{[523,659,784,1047].forEach((f,i)=>tone(f,i*.1,.12));tone(1047,.4,.45);tone(784,.4,.45,"triangle",.05);},
+  sad:()=>{[392,370,349,330].forEach((f,i)=>tone(f,i*.22,.26,"triangle",.07));},
+  alarm:()=>{tone(440,0,.12);tone(330,.14,.22);},
+  hurt:()=>tone(160,0,.3,"square",.05,60)
+};
+function sfx(n){if(!SOUND||!SFX[n])return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();SFX[n]();}catch(e){}}
+function toggleSound(){SOUND=!SOUND;try{localStorage.setItem("foak-sound",SOUND?"1":"0");}catch(e){}if(SOUND)sfx("coin");render();}
+function sndBtn(){return `<button class="snd" id="sndBtn" aria-pressed="${SOUND}">♪ Sound ${SOUND?"on":"off"}</button>`;}
+
+let toastT=null;
+function toast(t,kind){toastEl.textContent=t;toastEl.className="show "+(kind||"");clearTimeout(toastT);toastT=setTimeout(()=>{toastEl.className="";},1700);}
+
+/* game hooks */
+function fxOnFund(o,id,amount){
+  S.cel=S.cel||{};
+  if(o.kind!=="reduce"&&!S.cel.first){S.cel.first=1;celebrate("shovel","FIRST MONEY IN!",`${o.label}: ${fmt(amount)}. Time to break ground.`,{level:`${S.name} · Month ${Math.round(S.month)}`});}
+  else toast(o.kind==="reduce"?`−${fmt(amount)} CAPEX AVOIDED`:`+${fmt(amount)} SECURED`,"good");
+  sfx("coin");
+  if(id==="senior")celebrate("bank","THE BANK SAYS YES",`Senior project debt: ${fmt(amount)}. You crossed from financeable to bankable.`,{level:"BANKABLE"});
+}
+function stageCelebrate(k){
+  const n=need();
+  if(k==="pilot")celebrate("flask","PILOT FUNDED",`${fmt(n)} raised. Your stake: ${S.stake.toFixed(1)}%. Now prove the integrated system.`,{level:"LEVEL 2 UNLOCKED · DEMO"});
+  if(k==="demo")celebrate("factory","DEMO FUNDED",`${fmt(n)} raised. Your demo plant is running. Next: make the FOAK financeable.`,{level:"LEVEL 3 UNLOCKED · DEVELOPMENT"});
+  if(k==="close")celebrate("moneybag","FINANCIAL CLOSE!",`${fmt(n)} committed across ${S.stack.length} tranches. Shovels in the ground.`,{level:"LEVEL 5 UNLOCKED · CONSTRUCTION"});
+}
+function checkMilestones(){
+  if(!S||S.phase!=="play")return;S.cel=S.cel||{};
+  if(S.flags.offtakeBinding&&!S.cel.offtake){S.cel.offtake=1;celebrate("contract","OFFTAKE SIGNED","A creditworthy buyer committed take-or-pay volume tied to your plant. Lenders can now underwrite your revenue.",{level:"BANKABILITY BRICK UNLOCKED"});}
+}
+function paintSprites(){app.querySelectorAll("canvas[data-sprite]").forEach(c=>drawSprite(c,c.dataset.sprite,+c.dataset.scale||4));}
+
+/* ================= Instrument card collection ================= */
+Object.assign(SPR,{
+  gem:["..KKKKKKKK..",".KcWccbbbbK.","KcWccbbbbbBK","KKKKKKKKKKKK",".KbbcbbbbBK.","..KbbcbbBK..","...KbbbBK...","....KbBK....",".....KK....."],
+  coin:["...KKKKKK...","..KYYYYYYK..",".KYWYYYYOYK.","KYWYYKKYYOYK","KYYYKYYKYOYK","KYYYYYKYYOYK","KYYYYKYYYOYK","KYYYKKKKYOYK",".KYYYYYYYOK.","..KOOOOOOK..","...KKKKKK..."],
+  shield:["KKKKKKKKKKKK","KbbbbWWbbbbK","KbbbbWWbbbbK","KbbWWWWWWbbK","KbbWWWWWWbbK","KbbbbWWbbbbK","KbbbbWWbbbbK",".KbbbbbbbbK.",".KbbbbbbbbK.","..KbbbbbbK..","...KbbbbK...","....KKKK...."],
+  gear:["....KKKK....",".KK.KSSK.KK.",".KSKKSSKKSK.","..KSSSSSSK..","KKKSSKKSSKKK","KSSSK..KSSSK","KSSSK..KSSSK","KKKSSKKSSKKK","..KSSSSSSK..",".KSKKSSKKSK.",".KK.KSSK.KK.","....KKKK...."],
+  locked:["..KKKKKKKK..",".KDDDDDDDDK.","KDDsssssDDDK","KDDsDDDDsDDK","KDDDDDDDsDDK","KDDDDDssDDDK","KDDDDDsDDDDK","KDDDDDsDDDDK","KDDDDDDDDDDK","KDDDDDsDDDDK",".KDDDDDDDDK.","..KKKKKKKK.."]
+});
+const CTYPE={Equity:{c:"var(--accent)",spr:"gem"},Debt:{c:"var(--warn)",spr:"bank"},Grant:{c:"var(--good)",spr:"coin"},Guarantee:{c:"var(--violet)",spr:"shield"},Insurance:{c:"var(--violet)",spr:"shield"},Revenue:{c:"var(--violet)",spr:"contract"},Structure:{c:"var(--muted)",spr:"gear"}};
+/* stats are stylised game values (1-5) summarising the qualitative findings in the sources */
+const CARDS=[
+  {id:"vc",n:"Venture capital",t:"Equity",r:"Common",who:"Specialist climate VCs (Breakthrough Energy Ventures, Lowercarbon-type funds)",best:"Lab to demo (TRL 1-7). Re-ups into FOAK rounds as part of a syndicate.",takes:"Technology and team risk.",refuses:"Plant-sized capex: ~10-year fund lives and tickets too small for a commercial plant.",trap:"Expecting VC alone to fund the FOAK plant. 'VCs do not invest in bricks and steel.'",src:"TUM p17, p19; BCG p12; EIB p20",st:[5,5,2],keys:["pilot.vcA","demo.seriesB"]},
+  {id:"strategic",n:"Strategic equity",t:"Equity",r:"Common",who:"Future customers and suppliers: automakers, airlines, chemical and food majors",best:"Demo (with a joint development agreement) through FOAK (equity into the project company).",takes:"Market and application risk; brings offtake, sites, feedstock and know-how.",refuses:"Early R&D risk and anything off-strategy. Not suited as lead financier.",trap:"Engaging corporates too late; incentives and decision timelines differ.",src:"TNI p7-9; Road p50; Invest-NL Agrifood p41",st:[3,2,3],keys:["demo.strategic","close.stratEq"]},
+  {id:"grant",n:"Grants",t:"Grant",r:"Common",who:"EU Innovation Fund, CBE JU, national agencies, DOE",best:"Small grants for R&D; large ones at demo and FOAK (typically 5-10% of a big FOAK stack).",takes:"Non-dilutive first money, plus a diligence 'halo' that opens investor doors.",refuses:"Speed: 15-20+ person-months to apply, long evaluations, heavy reporting.",trap:"Applying too late, or building the plan around one subsidy that can be cut.",src:"OCED p16, p32; EIB p49; BCG p14",st:[5,1,2],keys:["pilot.grantRD","demo.grantDemo","close.grant"]},
+  {id:"shared",n:"Shared facility / CMO",t:"Structure",spr:"flask",r:"Common",who:"Shared pilot plants, contract manufacturers, partner sites",best:"Pilot and demo, before you need your own asset.",takes:"Capex: you rent time on existing equipment.",refuses:"Long-term exclusive use; access, fit and price can be the bottleneck.",trap:"Building your own pilot plant when shared capacity exists.",src:"Invest-NL Agrifood p39-40; EIB p24",st:[2,2,1],keys:["pilot.shared"]},
+  {id:"lease",n:"Equipment lease",t:"Debt",r:"Common",who:"Equipment lessors",best:"Demo: up to about a third of upfront cost (Solugen, Via Separations).",takes:"Asset risk on standard, resellable equipment.",refuses:"Whether your process works, and bespoke kit it can't resell.",trap:"Few: but large suppliers' vendor finance is rarely open to small developers.",src:"OCED p17",st:[2,2,2],keys:["demo.lease"]},
+  {id:"projEq",n:"Project equity (SPV)",t:"Equity",r:"Rare",who:"Growth-infrastructure funds (TPG Rise-, Brookfield-type)",best:"FOAK, released in milestone-gated tranches.",takes:"Project risk once offtake and a delivery team are in place. Dilutes the project company, not your TopCo.",refuses:"Pure science risk.",trap:"Expecting it before offtake and an experienced team exist.",src:"OCED p19; BCG p4",st:[3,3,4],keys:["close.projEq"]},
+  {id:"catalytic",n:"Catalytic first loss",t:"Equity",r:"Rare",who:"Philanthropic and blended-finance funds, DFIs",best:"Demo and FOAK, at the bottom of the stack.",takes:"The first loss, which crowds in commercial money.",refuses:"Scale: it's scarce and not scalable alone.",trap:"Relying on one catalytic fund; Breakthrough Energy Catalyst's reported wind-down left a gap.",src:"BCG p5, p12; OCED p16",st:[5,2,2],keys:["close.catalytic"]},
+  {id:"gov",n:"Public lender",t:"Debt",r:"Rare",who:"DOE Loan Programs Office, EIB, KfW, export credit agencies",best:"FOAK. So far they have led FOAK project lending.",takes:"First-of-a-kind risk once independently validated; repayment can flex.",refuses:"Unvalidated risk. Expect 2+ years of diligence.",trap:"Underestimating the diligence timeline.",src:"OCED p19",st:[3,1,4],keys:["close.gov"]},
+  {id:"senior",n:"Senior project debt",t:"Debt",r:"Rare",who:"Commercial bank syndicates",best:"FOAK once risks are bounded; NOAK as the main source.",takes:"Contracted, post-construction cash-flow risk at 20-60% loan-to-value and 1.5-2×+ DSCR.",refuses:"Technology risk and merchant price risk.",trap:"Entering before the downside is bounded.",src:"OCED p19; BCG p10; TUM p21",st:[1,1,5],keys:["close.senior"]},
+  {id:"offtake",n:"Take-or-pay offtake",t:"Revenue",r:"Rare",who:"Creditworthy buyers of your product",best:"Before FID: >50% of output, binding, tied to this plant.",takes:"Demand and price risk: the buyer pays for contracted volume either way.",refuses:"Uncapped delay penalties and flexible, non-asset-specific terms (as far as lenders are concerned).",trap:"Going ahead on letters of intent.",src:"OCED p17, p32; AFRY p20-21",st:[2,1,4],keys:["dev.offtake","dev.loi"]},
+  {id:"perfGuar",n:"Supplier performance guarantees",t:"Insurance",r:"Rare",who:"Equipment suppliers (thyssenkrupp nucera, Midrex, SMS at Stegra)",best:"Pre-FID, when you integrate multiple EPC packages yourself.",takes:"Unit underperformance, paid as liquidated damages.",refuses:"The interfaces between packages: that's yours.",trap:"No experienced owner team to manage the interfaces.",src:"OCED p17, p20, p32",st:[2,2,2],keys:["dev.multiEpc"]},
+  {id:"tpi",n:"Technology performance insurance",t:"Insurance",r:"Rare",who:"Specialty insurers (New Energy Risk-type)",best:"FOAK, once you have runtime data. Engage insurers from TRL 6.",takes:"Underperformance: pays debt service if output misses spec.",refuses:"Risks it can't measure: no runtime data, no quote.",trap:"Skipping the demo, so there's nothing to price. Brightmark used it to unlock $185M of green bonds.",src:"Road p56-57",st:[3,3,3],keys:["dev.tpi"]},
+  {id:"epcWrap",n:"Turnkey EPC wrap",t:"Structure",r:"Rare",trapCard:true,who:"Top-tier EPC contractors",best:"Mature, repeatable plants. For FOAKs, a trade-off.",takes:"Construction price and schedule risk.",refuses:"Untested technology at their 1-3% margins, unless paid a big premium.",trap:"All 8 DOE case companies moved away from it. One hired a top-tier EPC for FEED to look bankable and paid in cost and delay.",src:"OCED p20-21; TNI p3",st:[1,4,4],keys:["dev.epcWrap"]},
+  {id:"sellout",n:"Incumbent balance sheet",t:"Structure",spr:"factory",r:"Rare",trapCard:true,who:"Industrial incumbents",best:"When no other route exists: 13 of 30 European FOAKs were balance-sheet-led.",takes:"Everything, including control.",refuses:"Sharing the plant's economics with you.",trap:"Handing over most of the upside and the learning loop.",src:"AFRY p16-17; Road p19-20",st:[3,4,5],keys:["close.sellout"]},
+  {id:"superround",n:"Venture super round",t:"Equity",r:"Trap",trapCard:true,who:"VC and crossover investors at your TopCo",best:"Rarely the right tool for a plant.",takes:"Anything, at a price.",refuses:"Nothing; it just dilutes.",trap:"Venture equity absorbing project execution risk, one of BCG's named allocation errors.",src:"BCG p5, p10",st:[5,5,4],keys:["close.super"]},
+  {id:"cvc",n:"Corporate VC with exclusivity",t:"Equity",r:"Trap",trapCard:true,who:"Incumbents' venture arms",best:"Pilot and demo validation, without exclusivity.",takes:"Technology risk with strategic fit.",refuses:"Anything off-strategy.",trap:"Exclusivity that locks out other buyers and strategic investors. Most DOE case companies refused it.",src:"OCED p16",st:[3,3,2],keys:["pilot.cvcX"]},
+  {id:"vdebt",n:"Venture debt",t:"Debt",r:"Trap",trapCard:true,who:"Venture lenders; EIB venture debt",best:"After revenue or a big equity round (Lumicks, after its Series D).",takes:"Runway extension, without dilution.",refuses:"Pre-revenue risk.",trap:"Short tenor against a plant that takes 3+ years to ramp up.",src:"OCED p17; Invest-NL Enabling p30; AFRY p12",st:[2,3,2],keys:["pilot.vdebt","close.vdebt"]},
+  {id:"bank",n:"Early bank loan",t:"Debt",r:"Trap",trapCard:true,who:"House and regional banks",best:"Once you have cash flow and collateral.",takes:"Collateralised, predictable risk.",refuses:"'Equity-level risk with debt-level returns.'",trap:"A bank that lends to your demo can call the loan mid-build, and its exit scares off everyone else.",src:"TUM p21; Road p30",st:[1,1,3],keys:["pilot.bank","demo.regBank"]},
+  {id:"infra",n:"Infrastructure equity",t:"Equity",r:"Trap",trapCard:true,who:"Core infrastructure funds and sovereign wealth funds",best:"NOAK: contracted, repeatable assets.",takes:"Long-dated, contracted cash flows.",refuses:"Anything without operating proof.",trap:"Infrastructure capital arriving before operating proof, a BCG allocation error.",src:"BCG p10, p12",st:[1,1,5],keys:["demo.infra"]},
+  {id:"sov",n:"Sovereign / ECA guarantee",t:"Guarantee",r:"Epic",region:"Nordics",who:"National debt offices and export credit agencies (Riksgälden, Euler Hermes)",best:"FOAK project debt, to let banks lend more.",takes:"The credit risk banks won't carry.",refuses:"Unvalidated projects: same diligence as the banks.",trap:"Even guaranteed, Stegra's stack stayed around 60% debt.",src:"OCED p32; TUM p42",st:[3,2,5],keys:["close.sov"]},
+  {id:"investnl",n:"Invest-NL co-investment",t:"Equity",r:"Epic",region:"Netherlands",who:"Invest-NL and regional development funds",best:"Growth to FOAK, alongside private investors.",takes:"A residual gap; mobilises about 3.4× its own money.",refuses:"Validation and policy risk; projects outside its mandate.",trap:"Moving production abroad takes you out of its reach.",src:"Invest-NL Agrifood p12, p14",st:[3,2,3],keys:["close.investnl"]},
+  {id:"spi",n:"Bpifrance SPI equity",t:"Equity",r:"Epic",region:"France",who:"Bpifrance's industrial projects fund",best:"FOAK above TRL 6, in tickets of €10-160M (AFYREN's NEOXY).",takes:"FOAK equity risk VCs won't take.",refuses:"Pre-demo technology.",trap:"Skipping the demo leaves you below its TRL bar.",src:"EIB p35",st:[3,2,4],keys:["close.spi"]},
+  {id:"ccfd",n:"Carbon contract for difference",t:"Revenue",r:"Epic",region:"Germany",who:"Federal government (Klimaschutzverträge)",best:"Pre-FID, to make revenue bankable.",takes:"CO₂ price risk: pays the gap to your agreed abatement price.",refuses:"Volume risk: you still need buyers.",trap:"Treating it as a substitute for customers.",src:"TUM p7, p24-25",st:[4,1,3],keys:["dev.ccfd"]},
+  {id:"taxcredit",n:"Transferable tax credits",t:"Grant",r:"Epic",region:"United States",who:"Corporate tax-credit buyers, bridge lenders, tax equity",best:"FOAK and beyond, monetised early with a bridge loan.",takes:"Turns future credits into cash now.",refuses:"Policy risk: credits are law until they aren't.",trap:"Depending on policy that changes; DOE terminated 223 projects in 2025.",src:"OCED p17; BCG p14, p16",st:[4,1,2],keys:["close.taxcredit"]}
+];
+const CARD_BY_KEY={};CARDS.forEach(c=>c.keys.forEach(k=>CARD_BY_KEY[k]=c));
+let COLL={};try{COLL=JSON.parse(localStorage.getItem("foak-cards")||"{}")||{};}catch(e){COLL={};}
+function saveColl(){try{localStorage.setItem("foak-cards",JSON.stringify(COLL));}catch(e){}}
+function collectCard(key,v){
+  const c=CARD_BY_KEY[key];if(!c)return;
+  const e=COLL[c.id]||{};const wasSeen=!!e.seen,wasM=!!e.m;
+  e.seen=1;if(v==="good"||c.trapCard)e.m=1;COLL[c.id]=e;saveColl();
+  if(S){S.newCards=S.newCards||[];if(!wasSeen&&!S.newCards.includes(c.id))S.newCards.push(c.id);}
+  if(!wasSeen)setTimeout(()=>{toast(`NEW CARD: ${c.n.toUpperCase()}`,"good");sfx("blip");},450);
+  else if(e.m&&!wasM)setTimeout(()=>{toast(`★ CARD MASTERED: ${c.n.toUpperCase()}`,"good");sfx("up");},450);
+}
+const collCount=()=>({seen:CARDS.filter(c=>COLL[c.id]&&COLL[c.id].seen).length,m:CARDS.filter(c=>COLL[c.id]&&COLL[c.id].m).length,all:CARDS.length});
+function cardsBtn(){const k=collCount();return `<button class="snd cardsbtn" data-binder="1">CARDS ${k.seen}/${k.all}</button>`;}
+
+/* binder overlay */
+const binder=document.createElement("div");binder.id="binder";binder.hidden=true;binder.setAttribute("role","dialog");binder.setAttribute("aria-modal","true");binder.setAttribute("aria-label","Card binder");
+document.body.appendChild(binder);
+let bFilter="All",bOpenCard=null,bResetArm=false,bPrevFocus=null;
+const BFILTERS=["All","Equity","Debt","Public","Risk tools","Regional","Traps"];
+function inFilter(c){if(bFilter==="All")return true;if(bFilter==="Equity")return c.t==="Equity";if(bFilter==="Debt")return c.t==="Debt";
+  if(bFilter==="Public")return ["grant","gov","sov","investnl","spi","ccfd","taxcredit"].includes(c.id);if(bFilter==="Risk tools")return ["Insurance","Guarantee","Revenue"].includes(c.t)||c.t==="Structure";
+  if(bFilter==="Regional")return !!c.region;if(bFilter==="Traps")return c.r==="Trap";return true;}
+function bars(n){return `<span class="cbars" aria-label="${n} of 5">${[1,2,3,4,5].map(i=>`<i class="${i<=n?"on":""}"></i>`).join("")}</span>`;}
+function miniCard(c){
+  const e=COLL[c.id]||{},T=CTYPE[c.t];
+  if(!e.seen)return `<button class="ccard locked" data-card="${c.id}" aria-label="Locked card: ${esc(c.t)}"><canvas data-sprite="locked" data-scale="4"></canvas><span class="cname">???</span><span class="ctype">${esc(c.t)}${c.region?" · "+esc(c.region):""}</span></button>`;
+  return `<button class="ccard ${e.m?"mastered":""} r-${c.r.toLowerCase()}" data-card="${c.id}" style="--tc:${T.c}"><span class="crar">${esc(c.r)}${e.m?" · ★":""}</span><canvas data-sprite="${c.spr||T.spr}" data-scale="4"></canvas><span class="cname">${esc(c.n)}</span><span class="ctype">${esc(c.t)}${c.region?" · "+esc(c.region):""}</span></button>`;
+}
+function bigCard(c){
+  const e=COLL[c.id]||{},T=CTYPE[c.t];
+  return `<div class="cbig ${e.m?"mastered":""} r-${c.r.toLowerCase()}" style="--tc:${T.c}">
+    <div class="chead"><span class="crar">${esc(c.r)} · ${esc(c.t)}${c.region?" · "+esc(c.region):""}</span>${e.m?`<span class="cm">★ MASTERED</span>`:""}</div>
+    <div class="ctop"><canvas data-sprite="${c.spr||T.spr}" data-scale="7"></canvas><h3>${esc(c.n)}</h3></div>
+    <div class="cstats"><div><span>Risk appetite</span>${bars(c.st[0])}</div><div><span>Cost to you</span>${bars(c.st[1])}</div><div><span>Ticket size</span>${bars(c.st[2])}</div></div>
+    <dl><dt>Who</dt><dd>${esc(c.who)}</dd><dt>Right moment</dt><dd>${esc(c.best)}</dd><dt>Takes</dt><dd>${esc(c.takes)}</dd><dt>Refuses</dt><dd>${esc(c.refuses)}</dd><dt>Trap</dt><dd>${esc(c.trap)}</dd></dl>
+    <span class="src">${esc(c.src)} · stats are stylised game values</span>
+    ${e.m?"":`<p class="chint">Master it: ${c.trapCard?"meet it in a game to learn its lesson.":"use it at the right moment in a game."}</p>`}
+  </div>`;
+}
+function renderBinder(){
+  const k=collCount();
+  const list=CARDS.filter(inFilter);
+  let body;
+  if(bOpenCard){const c=CARDS.find(x=>x.id===bOpenCard);body=`<button class="btn ghost" id="bBack">◀ Back to binder</button>${bigCard(c)}`;}
+  else body=`<div class="bfilters" role="tablist">${BFILTERS.map(f=>`<button class="snd ${f===bFilter?"on":""}" role="tab" aria-selected="${f===bFilter}" data-bf="${f}">${f}</button>`).join("")}</div>
+    <div class="cgrid">${list.map(miniCard).join("")}</div>
+    <div class="row"><button class="snd" id="bReset">${bResetArm?"Click again to wipe all cards":"Reset collection"}</button></div>`;
+  binder.innerHTML=`<div class="bpanel"><div class="bhead"><div><span class="eyebrow">Card binder</span><h2>${k.seen}/${k.all} collected · ${k.m} ★ mastered</h2></div><button class="btn" id="bClose">Close ✕</button></div>
+    <p class="bintro">Every financing instrument you meet becomes a card. Use it at the right moment to master it. Your collection is saved in this browser across games.</p>${body}</div>`;
+  binder.querySelectorAll("canvas[data-sprite]").forEach(cv=>drawSprite(cv,cv.dataset.sprite,+cv.dataset.scale||4));
+  binder.querySelector("#bClose").onclick=closeBinder;
+  binder.querySelectorAll("[data-bf]").forEach(b=>b.onclick=()=>{bFilter=b.dataset.bf;renderBinder();});
+  binder.querySelectorAll("[data-card]").forEach(b=>b.onclick=()=>{const c=CARDS.find(x=>x.id===b.dataset.card);if(!(COLL[c.id]&&COLL[c.id].seen)){toast("LOCKED: MEET IT IN A GAME","bad");sfx("no");return;}bOpenCard=c.id;renderBinder();binder.scrollTop=0;sfx("blip");});
+  const bb=binder.querySelector("#bBack");if(bb){bb.onclick=()=>{bOpenCard=null;renderBinder();};bb.focus();}
+  const br=binder.querySelector("#bReset");if(br)br.onclick=()=>{if(bResetArm){COLL={};saveColl();bResetArm=false;}else bResetArm=true;renderBinder();};
+}
+function openBinder(cardId){bOpenCard=cardId||null;bFilter="All";bResetArm=false;bPrevFocus=document.activeElement;binder.hidden=false;document.body.classList.add("noscroll");renderBinder();binder.scrollTop=0;const c=binder.querySelector("#bClose");if(c&&!cardId)c.focus();sfx("blip");}
+function closeBinder(){binder.hidden=true;document.body.classList.remove("noscroll");bOpenCard=null;if(typeof render==="function")render();if(bPrevFocus&&bPrevFocus.isConnected)bPrevFocus.focus();}
+document.addEventListener("keydown",e=>{if(!binder.hidden&&e.key==="Escape"){if(bOpenCard){bOpenCard=null;renderBinder();}else closeBinder();}});
+function newCardsBlock(){
+  const ids=(S&&S.newCards)||[];if(!ids.length)return "";
+  return `<div class="story"><span class="eyebrow">New cards this run · ${ids.length}</span><div class="cgrid">${ids.map(id=>miniCard(CARDS.find(c=>c.id===id))).join("")}</div><div class="row"><button class="btn ghost" data-binder="1">Open card binder</button></div></div>`;
+}
+
+</script>
+
+<script>
+/* ---------------- Sources ---------------- */
+const SOURCES = {
+  "TNI":"True North Institute, Learning From 18 FOAK Climate Technology Investment Case Studies (May 2025)",
+  "AAF":"All Aboard Fund, Evaluating FOAK Investment Performance of 25 Leading Climate Investors (Nov 2025)",
+  "TUM":"Lehofer, Rode & Egli (TU Munich), Financing first-of-a-kind climate technologies, SSRN 7499642",
+  "OCED":"US DOE OCED, Financing and Development Approaches from Recent FOAK Projects (Nov 2024)",
+  "Road":"Arison ESG Center, The Road to FOAK (Apr 2026)",
+  "BCG":"BCG & HSBC, Turning Venture-Backed Innovation into Bankable Climate Infrastructure (2026)",
+  "AFRY":"AFRY for Invest-NL, First-of-a-Kind study",
+  "EIB":"EIB, Scaling up Europe's bio-based industries (2025)",
+  "Invest-NL Agrifood":"Invest-NL, Deep dive agrifood biotech",
+  "Invest-NL Enabling":"Invest-NL, Deep dive enabling biotech"
+};
+
+/* ---------------- Sectors ---------------- */
+const SECTORS = {
+  steel:{name:"Green steel",tag:"Hydrogen-based direct reduced iron plus an electric arc furnace",
+    type:"Engineering FOAK",
+    note:"Demand and regulation are fairly clear: EU ETS, CBAM and automakers who pay a premium. The hard part is integrating electrolysers, DRI and an EAF at scale for the first time. Your capital has to absorb construction and integration risk.",
+    need:{pilot:12,demo:110,dev:35,foak:1400}, pre:{pilot:25,demo:160,foak:800},
+    N:{grantSmall:"EU Research Fund for Coal and Steel grant",grantDemo:"National industrial-transition grant (Industrial Leap-style)",grantBig:"EU Innovation Fund grant plus national state aid",govLoan:"EIB loan plus export-credit guarantees on the bank debt",offtaker:"automakers and appliance makers",site:"Brownfield site with grid capacity, water and early environmental permits",partnerSite:"an incumbent steelmaker's test site"},
+    ev:{title:"Electrolyser deliveries slip",text:"Your electrolyser supplier ships the stacks nine months late, and the DRI shaft cannot run without hydrogen.",mit:["perfGuarantees","epcWrap"],mitText:"Supplier performance guarantees and liquidated damages cover the cost of the delay.",months:9,src:"OCED p32"},
+    real:"Stegra (Boden, Sweden) raised about €6.8B: roughly 50% senior debt backed by two €1.2B guarantees from Riksgälden and Euler Hermes, 10% junior debt, 30% equity mostly from offtakers and suppliers, and 10% grants. FID required 50% of output under offtake.",realSrc:"OCED p32; TUM p42"},
+  saf:{name:"e-SAF",tag:"Green hydrogen plus captured CO₂, turned into jet fuel via Fischer-Tropsch",
+    type:"Contextual FOAK",
+    note:"The process steps are known. The open question is whether the fuel sells at a viable price and volume in a market that barely exists. Your capital has to lock in revenue: binding offtake, mandates and buyers who pay the premium.",
+    need:{pilot:6,demo:45,dev:15,foak:350}, pre:{pilot:20,demo:90,foak:300},
+    N:{grantSmall:"Horizon Europe research grant",grantDemo:"National climate-tech demonstration grant",grantBig:"EU Innovation Fund grant",govLoan:"EIB venture debt / project loan",offtaker:"airlines, with a corporate buyer sharing the premium",site:"Site with a long-term fixed-price renewable PPA, a CO₂ source and early permits",partnerSite:"a refinery partner's test site"},
+    ev:{title:"Power price reprices",text:"Your electricity supplier reprices. Green power now costs 30% more than in your model, and power is most of the cost of an e-fuel.",mit:["site"],mitText:"The long-term fixed-price PPA in your site package protects the margin.",months:4,src:"OCED p13; BCG p9"},
+    real:"Ineratec ERA ONE (about €70M) used €40M of EIB venture debt and €30M from Breakthrough Energy Catalyst, with no commercial bank debt. Twelve raised $645M including $400M of milestone-gated project equity from TPG Rise and a 14-year IAG offtake. LanzaJet Freedom Pines: 10% DOE grant, 25% catalytic grant, 25% Microsoft loan, 40% equity from offtakers.",realSrc:"TUM p42; OCED p19, p30"},
+  pf:{name:"Precision fermentation",tag:"Animal-free dairy proteins made by engineered microbes",
+    type:"Complex FOAK",
+    note:"Both halves are open: will titre, yield and downstream processing hold up at 100 m³ and above, and will food companies switch at today's price? On top of that, EU Novel Food approval takes 2-6+ years. No single instrument covers this; it takes a consortium.",
+    need:{pilot:5,demo:30,dev:8,foak:140}, pre:{pilot:18,demo:70,foak:150},
+    N:{grantSmall:"National biotech grant (Biotech Booster-style)",grantDemo:"Public co-investment from Invest-NL or a regional development fund",grantBig:"EU / national FOAK programme grant",govLoan:"EIB loan (Formo- or MATR-style ticket)",offtaker:"food and infant-nutrition companies",site:"File the Novel Food dossier early and launch in the US first",partnerSite:"a shared pilot plant or CMO (e.g. Bio Base Europe Pilot Plant)"},
+    ev:{title:"Novel Food approval slips",text:"EFSA asks for more data. EU approval moves 18 months out, and EU buyers will not take volume before approval.",mit:["site"],mitText:"You filed early and launched in the US first, so the plant sells while the EU dossier finishes.",months:18,src:"Invest-NL Agrifood p40"},
+    real:"Recent European tickets: Solar Foods €77.8M public grant/loan package, Formo €35M from the EIB, MATR Foods €20M from the EIB. Invest-NL recommends a consortium where the operator and offtaker invest equity, with public money covering only the residual gap.",realSrc:"Invest-NL Agrifood p13, p43"},
+  biochem:{name:"Bio-based chemicals",tag:"Drop-in chemicals from second-generation biomass",
+    type:"Complex FOAK",
+    note:"A drop-in commodity: buyers pay a premium of 5-10% at most, but the product costs 2-3× its fossil equivalent. You need scale to compete and demand to justify the scale. Strategic partners and feedstock owners are the default route.",
+    need:{pilot:10,demo:50,dev:15,foak:310}, pre:{pilot:22,demo:100,foak:250},
+    N:{grantSmall:"CBE JU research grant",grantDemo:"CBE JU demonstration grant",grantBig:"CBE JU flagship plus EU Innovation Fund grant",govLoan:"EIB loan under InvestEU",offtaker:"chemical majors and brand owners",site:"Brownfield site in a chemical cluster with early permits",partnerSite:"a shared multipurpose demo plant (Ghent, Leuna)"},
+    ev:{title:"Feedstock quality swings",text:"At industrial scale your biomass varies far more than in the pilot. Yields drop and the plant runs at half capacity.",mit:["assetLight","ie"],mitText:"You tested a wide feedstock range at the shared facility, and the independent engineer built it into the design basis.",months:8,src:"AFRY p18-19"},
+    real:"Across 30 European FOAKs, 15 were equity-led, 13 balance-sheet-led and only 2 debt-led. Strategic equity was the largest source (€605M across 10 plants); VC contributed only €60M. AFYREN's FOAK used equity from Bpifrance's SPI fund.",realSrc:"AFRY p16-17; EIB p35"},
+  ldes:{name:"Long-duration storage",tag:"Iron-air batteries that deliver 100 hours of storage",
+    type:"Engineering FOAK",
+    note:"Utilities want firm capacity, but nobody has run 100-hour storage at grid scale. Your capital has to carry manufacturing and performance risk until utilities sign long-term capacity contracts.",
+    need:{pilot:6,demo:40,dev:12,foak:220}, pre:{pilot:20,demo:120,foak:400},
+    N:{grantSmall:"EIC Pathfinder / ARPA-E-style grant",grantDemo:"National storage demonstration grant",grantBig:"EU Innovation Fund grant",govLoan:"EIB loan / national promotional bank guarantee",offtaker:"utilities, via long-term capacity contracts",site:"Interconnection queue position, brownfield site and early permits",partnerSite:"a utility's substation test site"},
+    ev:{title:"Interconnection delay",text:"The grid operator pushes your connection date back by a year.",mit:["site"],mitText:"You secured your queue position early as part of the site package.",months:12,src:"TNI p9"},
+    real:"Form Energy raised about $1.39B: specialist VCs from Series A, growth investors (TPG Rise, T. Rowe) at the factory stage, strategic equity (ArcelorMittal, GE Vernova), small grants (about $7M) and utility pilots that grew into contracts.",realSrc:"TNI p23"}
+};
+
+const DIFFS = {
+  easy:{name:"Tailwinds",blurb:"An advisor gives a tip at each stage, and requirements are shown on every card. Fewer shocks during construction. 4 resilience points.",res:4,devPicks:6,showReq:true,tips:true,p:{capex:.45,ramp:.4,policy:.1,tech:.1},rescue:.2},
+  normal:{name:"Base case",blurb:"Requirements are shown, but no tips. Shock rates follow the reports: 10 of 16 FOAKs overran capex, and 61% ramped up 12+ months late. 3 resilience points.",res:3,devPicks:5,showReq:true,tips:false,p:{capex:.63,ramp:.61,policy:.25,tech:.15},rescue:.25},
+  hard:{name:"Downside case",blurb:"Requirements are hidden: you need to know what each funder wants. Lenders also demand FOAK-sized contingency, and shocks hit harder. 2 resilience points.",res:2,devPicks:5,showReq:false,tips:false,p:{capex:.8,ramp:.75,policy:.45,tech:.25},rescue:.35}
+};
+
+const STAGES = ["pilot","demo","dev","close","build"];
+const STAGE_NAMES = {pilot:"Pilot",demo:"Demo",dev:"Pre-FID development",close:"FOAK financial close",build:"Construction & ramp-up"};
+
+/* ---------------- State ---------------- */
+let S;
+function fresh(sector,diff,region,name){
+  const D=DIFFS[diff];
+  S={sector,diff,stage:0,month:0,stake:60,flags:{},decisions:[],picked:{},cover:0,res:D.res,
+     capexMult:1,stack:[],devSel:[],feedback:null,events:[],evIdx:0,evResolved:false,failed:false,phase:"play",spvShare:0,region:region||"nordics",name:name||CO_NAMES[sector],cred:0,quizRight:0,quizCount:0,mods:{demoNeed:1,tech:0,ramp:0,capex:0,policy:0},usedQ:[],usedD:[]};
+}
+const SEC=()=>SECTORS[S.sector], DF=()=>DIFFS[S.diff], N=()=>({...SECTORS[S.sector].N,...((REGIONS[S.region]||{}).N||{})});
+const fmt=m=>m>=1000?`€${(m/1000).toFixed(m%1000===0?0:2).replace(/\.?0+$/,"")}B`:`€${Math.round(m)}M`;
+function need(){const k=STAGES[S.stage];if(k==="close"||k==="build")return SEC().need.foak*S.capexMult;return SEC().need[k]*(k==="demo"?S.mods.demoNeed:1);}
+function dilute(amount,pre){const d=amount/(pre+amount);S.stake=S.stake*(1-d);return d;}
+function snap(){S.snap=JSON.stringify({stake:S.stake,month:S.month,flags:S.flags,n:S.decisions.length,capexMult:S.capexMult});}
+function resetRound(){const o=JSON.parse(S.snap);S.stake=o.stake;S.month=o.month+1;S.flags=o.flags;S.capexMult=o.capexMult;S.decisions.length=o.n;S.stack=[];S.picked={};S.cover=0;S.feedback=null;render();}
+function record(stage,label,v,lesson,src){S.decisions.push({stage,label,v,lesson,src});}
+
+/* ---------------- Option catalogues ---------------- */
+function pilotOptions(){const n=N();return [
+  {id:"vcA",label:"Series A from specialist climate VCs",who:"Climate VCs such as Breakthrough Energy Ventures or Lowercarbon",kind:"equity",cover:.6,req:"A working lab prototype and a credible team",
+   run:()=>({ok:true,v:"good",lesson:"Venture equity is built for technology risk. At pilot stage (TRL 4-6), grants plus venture equity are the right capital.",src:"BCG p4; TNI p4"})},
+  {id:"grantRD",label:n.grantSmall,who:"Public R&D programme",kind:"grant",cover:.35,months:4,req:"Pre-competitive R&D with clear milestones",
+   run:()=>({ok:true,v:"good",lesson:"Non-dilutive grants fit proof-of-concept work, and the public diligence works as a signal to your next investors.",src:"OCED p16; Invest-NL Agrifood p12"})},
+  {id:"shared",label:`Run the pilot at ${n.partnerSite} instead of building your own`,who:"Shared facility or partner",kind:"reduce",cover:.35,req:"Your process fits their equipment",
+   run:()=>{S.flags.assetLight=true;return{ok:true,v:"good",lesson:"Shared pilot plants, CMOs and partner sites avoid capex you don't need yet. Investors have favoured capital-efficient scale-up since 2021.",src:"Invest-NL Agrifood p39-40; EIB p24"}}},
+  {id:"vdebt",label:"Venture debt facility",who:"Venture lenders",kind:"debt",cover:.3,req:"Revenue or an installed base, plus strong equity backing",
+   run:()=>({ok:false,months:2,v:"bad",lesson:"Venture lenders lend against revenue or a large recent equity round. Pre-revenue at pilot stage, there is nothing to lend against.",src:"OCED p17; Invest-NL Enabling p30"})},
+  {id:"bank",label:"Term loan from your house bank",who:"Commercial bank",kind:"debt",cover:.5,req:"Cash flow and collateral",
+   run:()=>({ok:false,months:2,v:"bad",lesson:"Banks will not take equity-level risk for debt-level returns. No cash flow and no collateral means no loan.",src:"TUM p21"})},
+  {id:"cvcX",label:"Corporate VC from an incumbent, with exclusivity on your product",who:"Corporate venture arm",kind:"equity",cover:.5,req:"Strategic fit with the parent company",
+   run:()=>{S.flags.exclusivity=true;return{ok:true,v:"trap",lesson:"Corporate investors often ask for exclusivity. Most FOAK developers in the DOE case studies refused it to keep offtake and investor options open.",src:"OCED p16",now:"Accepted. Watch out: exclusivity can lock out other buyers and strategic investors later."}}}
+];}
+
+function demoOptions(){const n=N();return [
+  {id:"seriesB",label:"Series B led by a syndicate of specialist climate investors",who:"Climate VC and growth syndicate",kind:"equity",cover:.45,req:"Pilot data and customer road-tests",
+   run:()=>({ok:true,v:"good",lesson:"A syndicate spreads risk and signals quality. FOAKs backed by 3+ leading climate investors were the ones that went on to build plants.",src:"TNI p11; AAF p1"})},
+  {id:"strategic",label:`Strategic equity plus a joint development agreement with ${n.offtaker}`,who:"Future customer as investor",kind:"equity",cover:.3,req:"Product that fits their needs; no conflicting exclusivity",
+   run:(o)=>{if(S.flags.exclusivity){o.cover=.12;return{ok:true,v:"ok",lesson:"Your exclusivity deal with the incumbent scares other strategics away, so only a small ticket comes in. Exclusivity has a price.",src:"OCED p16"}}
+     S.flags.strategicPartner=true;return{ok:true,v:"good",lesson:"Corporates who will later buy your product are the second leg of the three-legged stool: equity now, offtake later.",src:"TNI p7-9"}}},
+  {id:"grantDemo",label:n.grantDemo,who:"Public funder",kind:"grant",cover:.25,months:6,req:"Demo plan, co-funding and a deadline-driven project",
+   run:()=>{S.flags.grantHalo=true;return{ok:true,v:"good",lesson:"Demo grants typically cover 10-35% of the stack, and their deadlines push execution and customer talks forward.",src:"OCED p15-16"}}},
+  {id:"lease",label:"Equipment lease on the financeable parts of the bill of materials",who:"Equipment lessor",kind:"debt",cover:.25,req:"Standard, resellable equipment",
+   run:()=>({ok:true,v:"good",lesson:"An equipment lessor holds a lien on the equipment, not on whether your process works. Solugen and Via Separations funded up to a third of their demos this way.",src:"OCED p17"})},
+  {id:"regBank",label:"Construction loan from a regional bank",who:"Commercial bank",kind:"debt",cover:.35,req:"Collateral and a construction budget",
+   run:()=>{S.flags.earlyBank=true;return{ok:true,v:"trap",lesson:"One startup that brought bank debt in this early saw the bank withdraw after delays and overruns. The bank's exit stigmatised the project and it shut down. Senior debt should only enter once the downside is bounded.",src:"Road p30; BCG p10",now:"Accepted. The bank is comfortable for now."}}},
+  {id:"infra",label:"Infrastructure fund equity",who:"Infrastructure fund",kind:"equity",cover:.5,req:"Proven, contracted cash flows",
+   run:()=>({ok:false,months:3,v:"bad",lesson:"Infrastructure funds need proven, contracted cash flows. Infrastructure capital arriving before operating proof is one of the allocation errors BCG names.",src:"BCG p10, p12"})},
+  {id:"skip",label:"Skip the demo and go straight from pilot to FOAK",who:"Your board, impatient",kind:"skip",cover:0,req:"Nothing, which is the problem",
+   run:()=>{S.flags.skippedDemo=true;return{ok:true,v:"trap",skip:true,lesson:"Best practice is about a 10× scale-up per step. Skipping one leaves lenders with no integrated-system data to underwrite, and pilot results get over-extrapolated, the first link in AFRY's decision-error chain.",src:"BCG p7, p9; AFRY p24",now:"Done. You save about 2.5 years. Your board loves the speed."}}}
+];}
+
+function devOptions(){const n=N();const L=[
+  {id:"offtake",label:`Binding take-or-pay offtake for >50% of output with ${n.offtaker}, tied to this plant`,months:6,
+   run:(sel)=>{if(S.flags.skippedDemo){S.flags.loi=true;return{v:"ok",lesson:"Without demo data, buyers will only sign letters of intent. Long-term offtake follows proof.",src:"TUM p19; AFRY p21"}}
+     if(S.flags.exclusivity){S.flags.offtakeBinding=true;S.flags.singleOfftaker=true;return{v:"ok",lesson:"It's binding, but your exclusivity means a single buyer takes everything. A single buyer can change priorities or walk away.",src:"AFRY p22; OCED p16"}}
+     S.flags.offtakeBinding=true;return{v:"good",lesson:"Lenders need binding, creditworthy offtake tied to the financed plant. Stegra's FID required 50% of output under contract; AFRY counts >50% binding as high offtake strength.",src:"OCED p17, p32; AFRY p20"}}},
+  {id:"loi",label:"Collect letters of intent and MoUs from 10+ interested buyers",months:2,
+   run:()=>{S.flags.loi=true;return{v:"trap",lesson:"Several FOAKs went ahead on LOIs and ended in restructuring or suspension. Lenders count only binding contracts. One investor: 90% of projects fail because they have no agreements.",src:"AFRY p21; EIB p19"}}},
+  {id:"team",label:"Hire a project director and a CFO who have built and financed plants before",months:3,
+   run:()=>{S.flags.team=true;return{v:"good",lesson:"Owner capability is the strongest predictor of FOAK success. KiOR's lab-heavy team, which went bankrupt, is the cautionary tale.",src:"AFRY p23, p30; Road p36, p51"}}},
+  {id:"epcWrap",label:"Full lump-sum turnkey EPC wrap from a top-tier contractor (+20% capex)",months:6,
+   run:()=>{S.flags.epcWrap=true;S.capexMult*=1.2;return{v:"ok",lesson:"Lenders like a full wrap, but top-tier EPCs price FOAK risk high and deprioritise startups. All 8 DOE case companies moved away from the full-wrap model.",src:"OCED p20-21; TNI p3"}}},
+  {id:"multiEpc",label:"Multi-package EPC with you as integrator, plus supplier performance guarantees",months:4,
+   run:(sel)=>{S.flags.perfGuarantees=true;if(sel.includes("team")||S.flags.team)return{v:"good",lesson:"Stegra combined unit-rate packages with creditworthy performance guarantees from thyssenkrupp nucera, Midrex and SMS. An experienced owner team makes this work.",src:"OCED p17, p20, p32"};
+     S.flags.interfaceRisk=true;return{v:"ok",lesson:"Performance guarantees are in place, but without an experienced owner team nobody owns the interfaces between packages.",src:"OCED p20; AFRY p14"}}},
+  {id:"site",label:n.site,months:4,
+   run:()=>{S.flags.site=true;return{v:"good",lesson:S.sector==="pf"?"EU Novel Food approval takes 2-6+ years, 1-3 years longer than the US. Filing early and launching in the US first is common practice.":"Permitting and external interfaces cause most FOAK delays. Brownfield sites, early permits and secured utilities shorten them.",src:S.sector==="pf"?"Invest-NL Agrifood p40":"AFRY p14, p27; BCG p9"}}},
+  {id:"ie",label:"Independent engineer review plus a lender-grade techno-economic model",months:3,
+   run:()=>{S.flags.ie=true;return{v:"good",lesson:"Lenders want a third-party-validated model with downside cases. Many startups show up with a simple spreadsheet.",src:"BCG p9; Road p31, p51"}}},
+  {id:"contingency",label:"Budget 25-30% contingency and a three-year ramp-up case (+15% capex budget)",months:1,
+   run:()=>{S.flags.contingency=true;S.capexMult*=1.15;return{v:"good",lesson:"10 of 16 European FOAKs overran capex and 61% ramped up 12+ months late. Lenders expect 25-30% contingency at FOAK, double the mature norm.",src:"AFRY p12, p15; OCED p19"}}},
+  {id:"bigGrant",label:`Apply for the ${n.grantBig}`,months:9,
+   run:()=>{S.flags.bigGrant=true;return{v:"good",lesson:"Large grants take 15-20+ person-months and a long evaluation. Time the application against your maturity gates so the award lands before FID.",src:"EIB p49; AFRY p30"}}},
+  {id:"tpi",label:"Technology performance insurance",months:3,
+   run:()=>{if(S.flags.skippedDemo)return{v:"bad",rejected:true,lesson:"Insurers need runtime data, thousands of continuous hours of it. Without a demo you have none, so no insurer will quote.",src:"Road p56"};
+     S.flags.tpi=true;return{v:"good",lesson:"Brightmark's performance insurance enabled $185M of green bonds. Insurers wrap risks once they are measurable.",src:"Road p56-57"}}}
+];return regionalDev(L);}
+
+function closeOptions(){const n=N(),f=S.flags;const L=[
+  {id:"senior",label:"Senior non-recourse project debt from commercial banks",who:"Bank syndicate",kind:"debt",cover:.40,months:3,
+   req:"Binding offtake · EPC wrap or performance guarantees · independent engineer · demo data"+(S.diff==="hard"?" · FOAK contingency":""),
+   run:()=>{const miss=[];if(!(f.offtakeBinding||f.ccfd))miss.push("binding offtake or a carbon contract for difference");if(!(f.epcWrap||f.perfGuarantees))miss.push("an EPC wrap or supplier performance guarantees");if(!f.ie)miss.push("an independent engineer review");if(f.skippedDemo)miss.push("operating data from a demo");if(S.diff==="hard"&&!f.contingency)miss.push("FOAK-sized contingency");
+     if(miss.length)return{ok:false,months:3,v:"bad",miss,lesson:`The banks decline. Missing: ${miss.join(", ")}. Lenders want these bricks in place before saying yes.`,src:"TNI p9; TUM p21"};
+     return{ok:true,v:"good",lesson:"Banks lend at FOAK only when risks are bounded and allocated: 20-60% loan-to-value, DSCR of 1.5-2x+, heavy contingency.",src:"OCED p19; TUM p21"}}},
+  {id:"gov",label:n.govLoan,who:"Public lender",kind:"debt",cover:.25,months:9,req:"Independent engineer review · demo data · 2+ years of diligence",
+   run:()=>{const miss=[];if(!f.ie)miss.push("an independent engineer review");if(f.skippedDemo)miss.push("operating data from a demo");
+     if(miss.length)return{ok:false,months:3,v:"bad",miss,lesson:`The public lender declines. Missing: ${miss.join(", ")}.`,src:"OCED p19"};
+     S.flags.govLender=true;return{ok:true,v:"good",lesson:"So far, FOAK project lending has been led by government-backed lenders (DOE LPO, EIB, export credit agencies). Expect long diligence.",src:"OCED p19"}}},
+  {id:"grant",label:n.grantBig,who:"EU / national programme",kind:"grant",cover:.10,req:"An application submitted during development",
+   run:()=>{if(!f.bigGrant)return{ok:false,v:"bad",lesson:"You never applied. Big grants have to be in the pipeline during development, and that window has passed.",src:"AFRY p30; EIB p49"};
+     S.flags.grantSigned=true;return{ok:true,v:"good",lesson:"Grants are typically 5-10% of a large FOAK stack (Stegra about 10%), and they lower the blended cost of capital for everyone else.",src:"OCED p32"}}},
+  {id:"projEq",label:"Milestone-gated project equity from a climate infrastructure fund, into the project company",who:"Growth-infrastructure fund",kind:"spv",cover:.25,req:"Binding offtake · experienced delivery team",
+   run:()=>{const miss=[];if(!f.offtakeBinding)miss.push("binding offtake");if(!f.team)miss.push("an experienced delivery team");
+     if(miss.length)return{ok:false,months:2,v:"bad",miss,lesson:`The fund passes. Missing: ${miss.join(", ")}.`,src:"OCED p19; BCG p8"};
+     return{ok:true,v:"good",lesson:"Growth-infrastructure funds now invest at project level once offtake and a delivery team are in place, releasing money at milestones (TPG Rise put $400M into Twelve). It dilutes the project company, not your stake in the TopCo.",src:"OCED p19; BCG p4"}}},
+  {id:"stratEq",label:"Equity from offtakers and suppliers, into the project company",who:"Customers and suppliers",kind:"spv",cover:.15,req:"A strategic partner or binding offtake",
+   run:()=>{if(!(f.strategicPartner||f.offtakeBinding))return{ok:false,months:2,v:"bad",lesson:"No customer or supplier is close enough to invest. That relationship should have started at demo stage.",src:"TNI p7-9"};
+     S.flags.stratEquity=true;return{ok:true,v:"good",lesson:"Stegra's equity came largely from six offtakers and three suppliers. Customers investing equity is a stronger signal than a contract alone.",src:"OCED p32; Invest-NL Agrifood p43"}}},
+  {id:"catalytic",label:"Catalytic first-loss capital from a blended-finance fund",who:"Philanthropic / impact capital",kind:"spv",cover:.10,months:3,req:"Strong climate impact case",
+   run:()=>({ok:true,v:"good",lesson:"Catalytic capital takes the first loss to crowd in commercial money. It is scarce, though: the reported wind-down of Breakthrough Energy Catalyst left a gap.",src:"BCG p5, p12; Road p48"})},
+  {id:"sellout",label:"Sell a majority of the project company to an incumbent, who builds it on its balance sheet",who:"Industrial incumbent",kind:"spv",cover:.5,months:4,req:"An incumbent that wants the technology",
+   run:()=>{S.stake*=.8;return{ok:true,v:"ok",lesson:"Balance-sheet builds are common (13 of 30 European FOAKs), but you hand most of the plant's economics and control to the incumbent. Your TopCo value drops accordingly.",src:"AFRY p16-17; Road p19-20"}}},
+  {id:"super",label:"Venture super round at TopCo to fund the plant on the balance sheet",who:"VC and crossover investors",kind:"equity",cover:.45,req:"A great story",
+   run:()=>{S.flags.balanceSheet=true;return{ok:true,v:"bad",lesson:"VC money can build a plant, but venture equity absorbing project execution risk is an allocation error BCG names. It is expensive, highly dilutive, and it bets the whole company on one asset.",src:"BCG p5, p10; TUM p19",now:"Accepted. It's very dilutive."}}},
+  {id:"vdebt",label:"Three-year venture debt at TopCo",who:"Venture lender",kind:"debt",cover:.10,req:"Recent equity round",
+   run:()=>{S.flags.shortDebt=true;return{ok:true,v:"trap",lesson:"Short-tenor debt against a plant that takes 3+ years to ramp up is a maturity mismatch. Ramp-ups run long, so plan for it.",src:"AFRY p12, p32",now:"Accepted. Repayment starts in month 24 after close."}}}
+];return regionalClose(L);}
+
+/* ---------------- Tips (Tailwinds only) ---------------- */
+const TIPS={
+  pilot:"Pilot stage is about proving the process works. Who takes technology risk? Who wants cash flow you don't have yet?",
+  demo:"Demo is the ~10× step that proves the integrated system. Line up the people who will later buy your product. Banks and infrastructure funds are still too early.",
+  dev:"In the next stage, lenders will check for binding offtake, a construction risk allocation (an EPC wrap or performance guarantees), an independent engineer review, and a team that has built plants. Big grants need to be applied for now.",
+  close:"Stack capital by risk layer: grants and first-loss at the bottom, project equity, then public and commercial debt. Lenders want at least ~30% equity or grants beneath their debt.",
+};
+
+/* ---------------- Rendering helpers ---------------- */
+const app=document.getElementById("app");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const chip=v=>{const m={good:["good","Right instrument, right moment"],ok:["ok","Works, with a trade-off"],bad:["bad","Wrong moment"],trap:["bad","Trap"],neutral:["neutral","Accepted"],costly:["ok","Costly fix"]};const [c,t]=m[v]||m.neutral;return `<span class="chip ${c}">${t}</span>`;};
+function visibleVerdict(v){ if(v==="trap"&&S.diff!=="easy")return "neutral"; if(v==="bad"&&S.diff==="hard")return v; return v; }
+function resClass(v){return {good:"res-good",ok:"res-ok",bad:"res-bad",trap:"res-bad",neutral:"res-neutral"}[v]||"";}
+
+function ledger(){
+  if(!S||S.phase!=="play")return "";
+  const steps=STAGES.map((k,i)=>`<span class="${i<S.stage?"done":i===S.stage?"now":""}"></span>`).join("");
+  const hearts="♥".repeat(Math.max(S.res,0))+"♡".repeat(Math.max(DF().res-S.res,0));
+  return `<div class="ledger"><div class="steps" aria-hidden="true">${steps}</div>
+  <span><b>${esc(S.name)}</b> <span class="k">· ${SEC().name} · ${REGIONS[S.region].name}</span></span>
+  <span><span class="k">Stage </span><b>${STAGE_NAMES[STAGES[S.stage]]}</b></span>
+  <span><span class="k">Month </span><b>${Math.round(S.month)}</b></span>
+  <span><span class="k">Founder stake </span><b>${S.stake.toFixed(1)}%</b></span>
+  <span title="Committee credibility"><span class="k">Credibility </span><b>${"★".repeat(S.cred)||"–"}</b></span>
+  <span title="Resilience: how many unmitigated shocks your project can survive"><span class="k">Resilience </span><b class="hearts">${hearts}</b></span>${cardsBtn()}${sndBtn()}</div>`;
+}
+
+const KIND_COLORS={equity:"var(--accent)",grant:"var(--good)",debt:"var(--warn)",reduce:"var(--muted)",spv:"var(--violet)"};
+const KIND_NAMES={equity:"TopCo equity",grant:"Grant",debt:"Debt",reduce:"Capex avoided",spv:"Project-level equity"};
+function stackBar(){
+  const tot=Math.max(1,S.cover);
+  const segs=S.stack.map((s,i,a)=>`<div class="${i===a.length-1&&S.lastPick===s.id?"grow":""}" style="width:${(s.cover/tot)*100}%;background:${KIND_COLORS[s.kind]}" title="${esc(s.label)}">${s.cover>=.12?Math.round(s.cover*100)+"%":""}</div>`).join("");
+  const kinds=[...new Set(S.stack.map(s=>s.kind))];
+  const legend=kinds.map(k=>`<span><i style="background:${KIND_COLORS[k]}"></i>${KIND_NAMES[k]}</span>`).join("");
+  return `<div class="bar" role="img" aria-label="Funding raised: ${Math.round(S.cover*100)}% of need">${segs}</div>${legend?`<div class="bar-legend">${legend}</div>`:""}`;
+}
+
+/* ---------------- Screens ---------------- */
+function render(){
+  let h="";
+  if(!S||S.phase==="intro")h=introScreen();
+  else if(S.phase==="end")h=endScreen();
+  else{
+    const k=STAGES[S.stage];
+    h=ledger()+`<div class="cols"><div class="main">${S.inter?interScreen():k==="dev"?devScreen():k==="build"?buildScreen():menuScreen(k)}</div>${guideBox(S.inter?S.inter.k:k)}</div>`;
+  }
+  app.className="wrap"+(S&&S.phase==="play"?" play":"");
+  app.innerHTML=h;
+  bind();
+  paintSprites();
+  checkMilestones();
+}
+
+let pickSector=null,pickDiff="normal",pickRegion=null,pickName="";
+function aboutBlock(open){
+  return `<details class="about" ${open?"open":""}><summary>About this game &amp; sources</summary><div class="about-body">
+  <p><b>An educational simulation.</b> First of a Kind teaches how first-of-a-kind (FOAK) climate plants get financed: which instrument fits which stage, and why. Every lesson cites the public research it comes from.</p>
+  <p><b>Fictional characters.</b> All people, companies and organisations in the dialogues and company names are fictional. Real companies and public programmes appear only in sourced facts, case examples and instrument names.</p>
+  <p><b>Stylised numbers.</b> Amounts, valuations, probabilities, timelines and card stats are simplified for gameplay. Real deals vary widely.</p>
+  <p><b>Not advice.</b> Nothing here is investment, legal, tax or financial advice.</p>
+  <p><b>Privacy.</b> The game collects no data. Your best scores, card collection and sound setting are stored only in your own browser.</p>
+  <p><b>Built on:</b></p><ul class="sources">${Object.values(SOURCES).map(v=>`<li>${esc(v)}</li>`).join("")}</ul>
+  </div></details>`;
+}
+function introScreen(){
+  const reg=Object.entries(REGIONS).map(([k,R])=>`<button class="card ${pickRegion===k?"sel":""}" data-region="${k}"><span class="t">${R.name}</span><span class="meta">${esc(R.tag)}</span></button>`).join("");
+  const r=pickRegion&&REGIONS[pickRegion];
+  const sec=Object.entries(SECTORS).map(([k,s])=>`<button class="card ${pickSector===k?"sel":""}" data-sector="${k}">
+     <span class="t">${s.name}</span><span class="meta">${esc(s.tag)} · ${s.type} · FOAK ≈ ${fmt(s.need.foak)}</span></button>`).join("");
+  const dif=Object.entries(DIFFS).map(([k,d])=>`<button class="card ${pickDiff===k?"sel":""}" data-diff="${k}"><span class="t">${d.name}</span><span class="meta">${esc(d.blurb)}</span></button>`).join("");
+  const s=pickSector&&SECTORS[pickSector];
+  return `<div class="story fade" style="padding-top:12px">
+    <span class="eyebrow">A financing game · TRL 4 to commercial operation</span>
+    <div class="hero" aria-hidden="true"><canvas data-sprite="lab" data-scale="6"></canvas><canvas data-sprite="factory" data-scale="6"></canvas><canvas data-sprite="moneybag" data-scale="5"></canvas></div>
+    <h1>First of a Kind</h1>
+    <p>You run a climate-tech startup with a working lab prototype and a stake of 60% after seed. Your job is to reach commercial operation of your first-of-a-kind plant. At each stage, pick the instruments that fit. Funders reject the wrong ones, and some traps only bite later. Between stages, your team, lenders and buyers will disagree, and committees will test what you know.</p>
+  </div>
+  <div class="story"><span class="eyebrow">1 · Choose your sector</span><div class="cards two">${sec}</div>
+  ${s?`<p class="note"><b>${s.type}.</b> ${esc(s.note)}</p>`:""}</div>
+  <div class="story"><span class="eyebrow">2 · Choose where to build</span><div class="cards two">${reg}</div>
+  ${r?`<p class="note"><b>${r.name}.</b> ${esc(r.note)} <span class="src">${esc(r.src)}</span></p>`:""}</div>
+  <div class="story"><span class="eyebrow">3 · Choose difficulty</span><div class="cards">${dif}</div></div>
+  <div class="story"><label class="eyebrow" for="coName">4 · Name your company (optional)</label><input class="name" id="coName" maxlength="40" value="${esc(pickName||"")}" placeholder="${esc(pickSector?CO_NAMES[pickSector]:"e.g. Pixel Steel Co.")}"></div>
+  <div class="row"><button class="btn" id="start" ${pickSector&&pickRegion?"":"disabled"}>Start company</button>${pickSector&&pickRegion?`<span class="press">PRESS START</span>`:""}${cardsBtn()}${sndBtn()}${pickSector&&pickRegion?"":`<span class="src">Pick a sector and a region first.</span>`}</div>
+  ${aboutBlock(false)}`;
+}
+
+function stageIntro(k){
+  const s=SEC(),n=need();
+  const txt={
+    pilot:`Your lab results are in. Next: a pilot that proves the process runs under operating conditions (TRL 4-6). You need about <b>${fmt(n)}</b>.`,
+    demo:`The pilot works. Now the ~10× step: a demo plant that proves the integrated system (TRL 6-7). You need about <b>${fmt(n)}</b>.`,
+    close:`Development is done. Time to fund the FOAK itself: about <b>${fmt(n)}</b>${S.capexMult>1?` (including your budget choices)`:""}. Build a capital stack that covers 100%.`
+  }[k];
+  return `<div class="story fade"><span class="eyebrow">Month ${Math.round(S.month)} · ${STAGE_NAMES[k]}</span><div class="lvl"><canvas data-sprite="${{pilot:"flask",demo:"factory",close:"moneybag"}[k]}" data-scale="4" aria-hidden="true"></canvas><h2>${{pilot:"Prove the process",demo:"Prove the system",close:"Close the FOAK financing"}[k]}</h2></div><p>${txt}</p>
+  ${k==="close"?`<div class="real"><div class="eyebrow">How it was done · ${s.name}</div>${esc(s.real)} <span class="src">${s.realSrc}</span></div>`:""}
+  ${newsLine(k)}${DF().tips&&TIPS[k]?`<p class="note"><b>Advisor:</b> ${TIPS[k]}</p>`:""}</div>`;
+}
+
+function optionsFor(k){return k==="pilot"?pilotOptions():k==="demo"?demoOptions():closeOptions();}
+
+function menuScreen(k){
+  const opts=optionsFor(k), n=need();
+  const cards=opts.map(o=>{
+    const r=S.picked[o.id];
+    const amt=o.kind==="skip"?"":`${o.kind==="reduce"?"Cuts need by":"Up to"} ${fmt(((r&&r.cover)||o.cover)*n)}`;
+    let cost="";
+    if(o.kind==="equity"){const pre=SEC().pre[k==="close"?"foak":k];const a=o.cover*n;cost=` · dilution ≈ ${(a/(pre+a)*100).toFixed(0)}% of TopCo`;}
+    if(o.kind==="spv")cost=" · no TopCo dilution";
+    if(o.months)cost+=` · +${o.months} mo`;
+    const req=DF().showReq?`<span class="meta">Needs: ${esc(o.req)}</span>`:"";
+    const status=r?`${chip(visibleVerdict(r.v))}`:"";
+    return `<button class="card ${r?resClass(visibleVerdict(r.v)):""} ${r&&r.cover===0?"rejected":""} ${S.lastPick===o.id?"just":""}" data-opt="${o.id}" ${r?"disabled":""}>
+      ${status}<span class="t">${esc(o.label)}</span>${WHAT[k+"."+o.id]?`<span class="what">${esc(WHAT[k+"."+o.id])}</span>`:""}<span class="meta">${esc(o.who)}${amt?" · "+amt:""}${cost}</span>${req}</button>`;
+  }).join("");
+  const fb=S.feedback?feedbackBox(S.feedback):"";
+  const pct=Math.round(S.cover*100);
+  let err="";
+  if(k==="close")err=closeCheck();
+  const canDone=S.cover>=0.999&&!err;
+  return stageIntro(k)+`<div class="need"><div class="row" style="justify-content:space-between"><span class="eyebrow">Funded ${pct}% of ${fmt(n)}</span></div>${stackBar()}</div>
+  ${fb}<div class="cards">${cards}</div>
+  ${err&&S.cover>=0.999?`<p class="err">${err}</p>`:""}
+  <div class="row">${S.stack.length?`<button class="btn ghost" id="resetRound">Restart this round</button>`:""}<button class="btn" id="done" ${canDone?"":"disabled"}>${k==="close"?"Sign financial close":"Close the round"}</button><span class="src">${canDone?"":S.cover<0.999?`Cover at least 100% to continue.`:""}</span></div>`;
+}
+
+function closeCheck(){
+  const has=id=>S.stack.find(s=>s.id===id);
+  const debt=S.stack.filter(s=>["senior","gov","sov","vdebt"].includes(s.id)).reduce((a,s)=>a+s.cover,0);
+  if(debt>.7)return "Too much debt: FOAK lenders go to 20-60% loan-to-value, and even Stegra with sovereign guarantees was about 60% debt. Use Restart this round and swap a debt tranche for equity.";
+  if(!has("senior"))return "";
+  const cushion=S.stack.filter(s=>["projEq","stratEq","super","catalytic","grant","sellout"].includes(s.id)).reduce((a,s)=>a+s.cover,0);
+  if(cushion<.25)return "The banks want at least ~30% equity or grants beneath their debt. Add more equity-like capital.";
+  return "";
+}
+
+function feedbackBox(fb){
+  const v=visibleVerdict(fb.v);
+  const cls={good:"good",ok:"ok",bad:"bad",trap:"bad",neutral:""}[v];
+  const body=(v==="neutral")?(fb.now||"Accepted."):(fb.now&&S.diff==="easy"?fb.now+" ":"")+fb.lesson;
+  return `<div class="feedback fade ${cls}" role="status">${convo(fb.talk)}<div class="why">${chip(v)}<span class="lesson"><b>${esc(fb.label)}.</b> ${fb.ok===false?"<b>Rejected.</b> ":""}${v==="neutral"?"":"<b>Why:</b> "}${esc(body)}</span>${v!=="neutral"?`<span class="src">${esc(fb.src)}</span>`:""}</div></div>`;
+}
+
+function chooseOption(id){
+  const k=STAGES[S.stage];
+  const o=optionsFor(k).find(x=>x.id===id);
+  const res=o.run(o);
+  const cover=o.cover;
+  S.picked[id]={v:res.v,cover};
+  S.feedback={...res,label:o.label,talk:talkFor(k+"."+o.id,res)};
+  record(STAGE_NAMES[k],o.label,res.v,res.lesson,res.src);collectCard(k+"."+o.id,res.v);
+  if(res.ok===false){S.month+=res.months||0;S.picked[id].cover=0;S.lastPick=id;sfx("no");toast("REJECTED","bad");render();return;}
+  if(res.skip){S.month+=6;startInterlude("demo");return;}
+  S.month+=(o.months||0)*0.5;
+  const n=need();
+  if(o.kind==="equity")dilute(cover*n,SEC().pre[k==="close"?"foak":k]);
+  S.cover+=cover;S.stack.push({id,label:o.label,kind:o.kind,cover});S.lastPick=id;
+  fxOnFund(o,id,cover*n);
+  render();
+}
+
+function stageDone(){
+  const k=STAGES[S.stage];
+  S.month+=({pilot:18,demo:30,close:6}[k]);
+  if(k==="demo"&&S.flags.earlyBank){S.pendingBankShock=true;}
+  if(k==="close")S.foakStack=S.stack.slice();
+  stageCelebrate(k);
+  startInterlude(k);
+}
+function nextStage(skipped){
+  if(skipped){S.month+=6;}
+  S.stage+=1;S.lastPick=null;S.cover=0;S.stack=[];S.picked={};S.feedback=null;S.devSel=[];S.devResults=null;
+  if(STAGES[S.stage]==="build")setupEvents();
+  snap();
+  render();window.scrollTo(0,0);
+}
+
+/* ---------------- Dev stage ---------------- */
+function devScreen(){
+  const opts=devOptions(),max=DF().devPicks;
+  const bankShock=S.pendingBankShock?bankShockBox():"";
+  if(S.devResults){
+    const lines=S.devResults.map(r=>{const vv=visibleVerdict(r.v);return `<div class="feedback ${({good:"good",ok:"ok",bad:"bad",trap:"bad"})[vv]||""}">${convo(r.talk)}<div class="why">${chip(vv)}<span class="lesson"><b>${esc(r.label)}.</b> ${vv==="neutral"?"Done.":"<b>Why:</b> "+esc(r.lesson)}</span>${vv!=="neutral"?`<span class="src">${esc(r.src)}</span>`:""}</div></div>`;}).join("");
+    return `<div class="story fade"><span class="eyebrow">Month ${Math.round(S.month)} · Pre-FID development</span><h2>Workstreams complete</h2><p>Development took ${S.devMonths} months, funded by an insider bridge (≈4% dilution).</p></div>${lines}<div class="row"><button class="btn" id="devNext">Go to financial close</button></div>`;
+  }
+  const cards=opts.map(o=>{const sel=S.devSel.includes(o.id);return `<button class="card ${sel?"sel":""}" data-dev="${o.id}" aria-pressed="${sel}"><span class="t">${esc(o.label)}</span><span class="meta">${o.months} months</span></button>`;}).join("");
+  return bankShock+`<div class="story fade"><span class="eyebrow">Month ${Math.round(S.month)} · Pre-FID development</span><div class="lvl"><canvas data-sprite="contract" data-scale="4" aria-hidden="true"></canvas><h2>Make the project financeable</h2></div>
+  <p>${S.flags.skippedDemo?"You skipped the demo, so you go straight into development.":"The demo runs. Before anyone funds the FOAK,"} you have bandwidth for <b>${max} workstreams</b> over the next ~1.5 years. Workstreams run in parallel; the longest sets the pace.</p>
+  ${newsLine("dev")}${DF().tips?`<p class="note"><b>Advisor:</b> ${TIPS.dev}</p>`:""}</div>
+  <div class="cards">${cards}</div>
+  <div class="row"><button class="btn" id="devGo" ${S.devSel.length===max?"":"disabled"}>Commit ${S.devSel.length}/${max} workstreams</button></div>`;
+}
+function bankShockBox(){
+  return `<div class="feedback bad fade"><div class="convo">${bubble(P.regbank,"The demo is 35% over budget and three months late. That breaches our covenants, so we're calling the loan. I'm sorry, but credit committee won't wait.",false)}${bubble(P.you,"If you pull out now, nobody else will lend to us.",true)}${bubble(P.regbank,"That isn't something I can factor in.",false)}</div><div class="why">${chip("trap")}<span class="lesson"><b>The regional bank pulls out.</b> The demo ran 35% over budget and three months late. The bank called its loan, and other lenders read the exit as a red flag. You raise an emergency round at a lower valuation (−25% stake) and lose 9 months.</span><span class="src">Road p30; BCG p10</span></div></div>`;
+}
+function applyBankShock(){
+  if(!S.pendingBankShock)return;
+  S.pendingBankShock=false;S.stake*=.75;S.month+=9;
+  record("Demo · consequence","Regional bank withdraws mid-build","costly","Bank debt that enters before the downside is bounded can walk away when trouble starts, and its exit scares off replacement capital.","Road p30; BCG p10");
+}
+function commitDev(){
+  applyBankShock();
+  const opts=devOptions();const sel=S.devSel.slice();
+  sel.sort((a,b)=>(a==="team"?-1:b==="team"?1:0));
+  const out=[];let maxM=0;
+  sel.forEach(id=>{const o=opts.find(x=>x.id===id);const r=o.run(sel);maxM=Math.max(maxM,o.months);out.push({...r,label:o.label,talk:talkFor("dev."+id,r)});record("Development",o.label,r.v,r.lesson,r.src);collectCard("dev."+id,r.v);});
+  S.devMonths=12+maxM;S.month+=S.devMonths;S.stake*=.96;S.devResults=out;render();
+}
+
+/* ---------------- Build stage ---------------- */
+function setupEvents(){
+  const p0=DF().p,f=S.flags,ev=[],r=Math.random,R=REGIONS[S.region],m=S.mods;const p={capex:p0.capex+m.capex,ramp:p0.ramp+m.ramp,policy:p0.policy+m.policy+(R.policyAdj||0),tech:p0.tech+m.tech};
+  const overrun=[12,28,45,70,90][Math.floor(r()*r()*5)]+(S.diff==="hard"?10:0)+(f.rework?15:0);
+  if(r()<p.capex)ev.push({id:"capex",title:`Capex comes in ${overrun}% over budget`,text:`Equipment for the scaled-up process costs more than estimated, and a redesign after construction start adds more. You are not alone: 10 of 16 European FOAKs overran, two by more than 80%.`,
+    mit:f.contingency&&overrun<=30,mitText:"Your 25-30% contingency absorbs it.",partial:f.contingency&&overrun>30,months:6,src:"AFRY p15"});
+  if(r()<p.ramp||f.shortDebt)ev.push({id:"ramp",title:"Ramp-up takes 20 months longer than planned",text:`The plant works, but reaching nameplate capacity takes far longer than the business case assumed. 61% of FOAKs ramped up 12+ months late.${f.shortDebt?" Your three-year venture debt falls due in the middle of it.":""}`,
+    mit:(f.tpi||(f.contingency&&!f.strictCovenants))&&!f.shortDebt,mitText:f.tpi?"Your performance insurance covers debt service while output is below spec.":"You modelled a three-year ramp-up, and lenders sized the debt for it.",months:10,delay:true,src:"AFRY p12, p32"});
+  if(f.loi&&!f.offtakeBinding)ev.push({id:"loi",title:"The letters of intent evaporate",text:"With the plant ready, half your LOI buyers say the price is too high or the timing has changed. There is nothing to enforce.",mit:false,months:8,src:"AFRY p21; EIB p19"});
+  else if(f.singleOfftaker&&r()<.6)ev.push({id:"walk",title:"Your only buyer delays its offtake",text:"Your single buyer changes priorities and pushes the volume back by a year, much like BMW cancelling its €2B Northvolt order.",mit:false,months:8,src:"TNI p10; AFRY p22"});
+  if(f.skippedDemo&&r()<.85||(!f.skippedDemo&&r()<p.tech))ev.push({id:"tech",title:"Integrated system underperforms",text:"Units that worked separately interact badly at scale. Output stalls at 55% of spec.",mit:f.tpi||(f.perfGuarantees&&!f.skippedDemo),mitText:f.tpi?"The performance insurance pays out while you fix it.":"Supplier performance guarantees fund the fixes.",months:9,delay:true,src:"BCG p9; AFRY p24"});
+  if(f.interfaceRisk)ev.push({id:"iface",title:"Interface gaps between EPC packages",text:"Nobody owns the handover between the hydrogen, process and utilities packages. Rework follows.",mit:false,months:6,src:"OCED p20; AFRY p14"});
+  if(r()<p.policy)ev.push({id:"policy",title:"Policy support is cut",text:"A new government freezes part of the support programme, echoing the US DOE terminating 223 projects worth over $7.5B in 2025. Green-premium buyers start renegotiating.",
+    mit:R.policyHard?(f.offtakeBinding&&!f.grantDependent):(f.grantSigned||f.offtakeBinding||f.ccfd),mitText:R.policyHard?"Your binding offtake fixes the premium, and you never built the plan around a single subsidy.":f.grantSigned?"Your grant agreement was signed before FID, and your fixed-premium offtake holds.":"Your binding offtake fixes the premium regardless of policy.",months:4,src:"BCG p14, p16; Road p32"});
+  if(r()<.55)ev.push(sectorEvent());
+  if(R.event&&r()<.5)ev.push(regionEvent());
+  if(ev.length<2&&!ev.find(e=>e.id==="sector"))ev.push(sectorEvent());
+  S.events=ev.slice(0,6);S.evIdx=0;S.evResolved=false;S.evNote=null;
+}
+
+function responses(e){
+  const f=S.flags,list=[];
+  if(f.stratEquity||f.strategicPartner)list.push({id:"strat",label:"Ask your strategic partners to inject equity",note:"They have skin in the game. ≈8% dilution, +2 months.",v:"good",lesson:"Strategic investors with offtake and supply interests are the natural backstop: their stake depends on the plant working.",src:"TNI p7-10; OCED p32"});
+  if(e.delay&&f.govLender)list.push({id:"gov",label:"Ask the public lender to reschedule repayments",note:"Flexible terms negotiated up front. +1 month, no dilution.",v:"good",lesson:"AFRY recommends negotiating adaptable debt repayment terms up front, because ramp-ups run long. Public lenders are more flexible than banks.",src:"AFRY p30, p32"});
+  if((S.rescues||0)<2)list.push({id:"rescue",label:"Raise a rescue round from existing investors",note:`Down round. ≈${Math.round(DF().rescue*100)}% dilution, +4 months.`,v:"costly",lesson:"Overruns at FOAK usually end in new equity rounds or bridge loans. Pre-committed follow-on capital is cheaper than a rescue.",src:"AFRY p15, p32"});
+  list.push({id:"absorb",label:"Push through without new money",note:"Costs 1 resilience point.",v:"bad",lesson:"Running on empty through a shock is how FOAKs stall before reaching full scale.",src:"TUM p21"});
+  return list;
+}
+
+function buildScreen(){
+  const e=S.events[S.evIdx];
+  const intro=`<div class="story fade"><span class="eyebrow">Month ${Math.round(S.month)} · Construction & ramp-up</span><div class="lvl"><canvas data-sprite="${S.events[S.evIdx].mit?"heart":"cloud"}" data-scale="4" aria-hidden="true"></canvas><h2>Shock ${S.evIdx+1} of ${S.events.length}</h2></div>${S.evIdx===0?newsLine("build"):""}</div>`;
+  let body=`<div class="feedback ${e.mit?"good":e.partial?"ok":"bad"}${!e.mit&&!S.evResolved?" alarm":""}"><span class="lesson"><b>${esc(e.title)}.</b></span><div class="convo">${bubble(P.cfo,e.text,false)}</div><span class="src">${esc(e.src)}</span></div>`;
+  if(S.evNote)body+=S.evNote;
+  if(e.mit){body+=`<div class="feedback good"><div class="convo">${bubble(S.flags.team?P.director:P.cfo,e.mitText+" We lose about "+Math.round(e.months/3)+" months, nothing more.",false)}</div><div class="why">${chip("good")}<span class="lesson"><b>Why:</b> you prepared for this earlier. Mitigation decided before FID is far cheaper than a rescue during construction.</span><span class="src">BCG p8; AFRY p30</span></div></div>`;}
+  if((!e.mit)&&!S.evResolved){
+    const rs=responses(e);
+    body+=`<p>${e.partial?"Your contingency covers about half of it. ":""}${(S.rescues||0)>=2?"Your existing investors are tapped out after two rescue rounds. ":""}How do you respond?</p><div class="cards">${rs.map(r=>`<button class="card" data-resp="${r.id}"><span class="t">${esc(r.label)}</span><span class="meta">${esc(r.note)}</span></button>`).join("")}</div>`;
+  }else{
+    body+=`<div class="row"><button class="btn" id="evNext">${S.evIdx+1<S.events.length?"Next":"See outcome"}</button></div>`;
+  }
+  return intro+body;
+}
+function handleEventMit(){const e=S.events[S.evIdx];toast("RISK MITIGATED","good");sfx("up");S.month+=Math.round(e.months/3);record("Construction",e.title,"good",`Mitigated: ${e.mitText}`,e.src);S.evResolved=true;}
+function respond(id){
+  const e=S.events[S.evIdx];const r=responses(e).find(x=>x.id===id);
+  const factor=e.partial?.5:1;
+  if(id==="strat"){S.stake*=1-.08*factor;S.month+=2;}
+  if(id==="gov"){S.month+=1;}
+  if(id==="rescue"){S.stake*=1-DF().rescue*factor;S.month+=4;S.rescues=(S.rescues||0)+1;}
+  if(id==="absorb"){S.res-=1;S.month+=e.months;toast("−1 ♥ RESILIENCE","bad");sfx("hurt");}
+  S.month+=Math.round(e.months/2);
+  record("Construction",`${e.title}: ${r.label.toLowerCase()}`,r.v,r.lesson,r.src);
+  S.evResolved=true;
+  const RT={strat:[P.strat,"We need this plant to work as much as you do. We'll put in more equity, but we want a seat on the project company's board."],
+    gov:[P.publender,"We expected a long ramp-up. We'll reshape the repayment profile so amortisation starts a year later. No new money needed."],
+    rescue:[P.vc,S.rescues>=2?"We'll do it, at a lower valuation. But understand this is the last time: our fund has no reserves left for you.":"We'll lead an insider round to get you through, but at a lower valuation. Next time, let's agree on follow-on capital before we need it."],
+    absorb:[P.cfo,"We can stretch payables and freeze hiring for a quarter. But if anything else goes wrong, we have no buffer left."]};
+  const [rp,rtext]=RT[id];
+  S.evNote=`<div class="feedback ${r.v==="good"?"good":r.v==="costly"?"ok":"bad"} fade"><div class="convo">${bubble(P.you,r.label+".",true)}${bubble(rp,rtext,false)}</div><div class="why">${chip(r.v)}<span class="lesson"><b>Why:</b> ${esc(r.lesson)}</span><span class="src">${esc(r.src)}</span></div></div>`;
+  if(S.res<=0){S.failed=true;}
+  render();
+}
+function nextEvent(){
+  if(S.failed){S.phase="end";render();window.scrollTo(0,0);celebrate("cloud","PROJECT STALLED","Too many unmitigated shocks. The debrief shows where it went wrong.",{sad:true,level:"GAME OVER"});return;}
+  S.evIdx+=1;S.evResolved=false;S.evNote=null;
+  if(S.events[S.evIdx]&&!S.events[S.evIdx].mit)sfx("alarm");
+  if(S.evIdx>=S.events.length){S.month+=30;S.phase="end";render();window.scrollTo({top:0});celebrate("trophy","COMMERCIAL OPERATION!",`${S.name} runs the first plant of its kind, in month ${Math.round(S.month)}.`,{level:"YOU WIN"});return;}
+  const e=S.events[S.evIdx]; if(e.mit)handleEventMit();
+  render();
+}
+
+/* ---------------- End ---------------- */
+function endScreen(){
+  const judged=S.decisions.filter(d=>["good","ok","bad","trap"].includes(d.v)&&d.stage!=="Construction"&&d.stage!=="Quiz");
+  const score=judged.length?judged.reduce((a,d)=>a+(d.v==="good"?1:d.v==="ok"?.5:0),0)/judged.length:0;
+  const pct=Math.round(score*100);
+  const years=(S.month/12).toFixed(1);
+  let grade,head;
+  if(S.failed){grade="—";head=`${S.name}\u2019s first plant stalls`;}
+  else{grade=pct>=85&&S.stake>=20?"A":pct>=70?"B":pct>=55?"C":"D";head=`${S.name} brings its first-of-a-kind plant online`;}
+  const verdictText=S.failed?`Too many unmitigated shocks drained the project. This is the most common FOAK failure pattern: escalating costs and failure to close the gap.`:
+    `Your FOAK runs. ${S.foakStack&&S.foakStack.find(s=>s.id==="senior")?"With operating data and bank debt already in place, the next plant can be refinanced cheaply.":"With operating data, the next plant becomes bankable. This one was built on expensive capital."}`;
+  const stack=S.foakStack?`<div class="need"><span class="eyebrow">Your FOAK capital stack</span>${(()=>{const save={stack:S.stack,cover:S.cover};S.stack=S.foakStack;S.cover=S.foakStack.reduce((a,s)=>a+s.cover,0);const h=stackBar();S.stack=save.stack;S.cover=save.cover;return h;})()}
+    <div class="real"><div class="eyebrow">Compare · ${SEC().name}</div>${esc(SEC().real)} <span class="src">${SEC().realSrc}</span></div></div>`:"";
+  const lines=S.decisions.map(d=>`<div class="dline"><div>${chip(d.v)}</div><div><div class="stage">${esc(d.stage)}</div><div class="lbl">${esc(d.label)}</div><p class="lesson">${esc(d.lesson)}</p><span class="src">${esc(d.src)}</span></div></div>`).join("");
+  const used=[...new Set(S.decisions.flatMap(d=>Object.keys(SOURCES).filter(k=>d.src.includes(k))))];
+  return `<div class="story fade" style="padding-top:12px"><span class="eyebrow">${SEC().name} · ${REGIONS[S.region].name} · ${DF().name}${S.failed?"":` · commercial operation in month ${Math.round(S.month)}`}</span><div class="lvl"><canvas data-sprite="${S.failed?"cloud":"trophy"}" data-scale="5" aria-hidden="true"></canvas><h1>${head}</h1></div><p>${verdictText}</p></div>
+  <div class="grid2"><div class="stat"><span class="k">Instrument fit</span><span class="v">${pct}%</span></div>
+  <div class="stat"><span class="k">Founder stake</span><span class="v">${S.stake.toFixed(1)}%</span></div>
+  <div class="stat"><span class="k">Time</span><span class="v">${years} yrs</span></div>
+  <div class="stat"><span class="k">Grade</span><span class="v">${grade}</span></div></div>
+  ${endExtras(pct)}
+  ${newCardsBlock()}
+  ${stack}
+  <div class="row"><button class="btn" id="again">Play again</button><button class="btn ghost" id="menu">Change sector or difficulty</button></div>
+  <hr><div class="story"><span class="eyebrow">Debrief · every decision</span><h2>What you did, and what the research says</h2></div>
+  <div class="debrief">${lines}</div>
+  <div class="story"><span class="eyebrow">Sources</span><ul class="sources">${used.map(k=>`<li><b>${k}</b>: ${esc(SOURCES[k])}</li>`).join("")}</ul></div>
+  ${aboutBlock(false)}`;
+}
+
+/* ---------------- Events ---------------- */
+function bind(){
+  const gd=app.querySelector(".guide");if(gd)gd.addEventListener("toggle",()=>{S.guideOpen=gd.open;});
+  bindInter();
+  app.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{pickRegion=b.dataset.region;render();});
+  const nm=document.getElementById("coName");if(nm)nm.oninput=()=>{pickName=nm.value;};
+  app.querySelectorAll("[data-sector]").forEach(b=>b.onclick=()=>{pickSector=b.dataset.sector;render();});
+  app.querySelectorAll("[data-diff]").forEach(b=>b.onclick=()=>{pickDiff=b.dataset.diff;render();});
+  const st=document.getElementById("start");if(st)st.onclick=()=>{fresh(pickSector,pickDiff,pickRegion,(pickName||"").trim());snap();render();window.scrollTo({top:0});};
+  app.querySelectorAll("[data-opt]").forEach(b=>b.onclick=()=>chooseOption(b.dataset.opt));
+  const sb=document.getElementById("sndBtn");if(sb)sb.onclick=toggleSound;
+  app.querySelectorAll("[data-binder]").forEach(b=>b.onclick=()=>openBinder());
+  app.querySelectorAll("[data-card]").forEach(b=>b.onclick=()=>openBinder(b.dataset.card));
+  const rr=document.getElementById("resetRound");if(rr)rr.onclick=resetRound;
+  const done=document.getElementById("done");if(done)done.onclick=stageDone;
+  app.querySelectorAll("[data-dev]").forEach(b=>b.onclick=()=>{const id=b.dataset.dev,i=S.devSel.indexOf(id);if(i>=0)S.devSel.splice(i,1);else if(S.devSel.length<DF().devPicks)S.devSel.push(id);render();});
+  const dg=document.getElementById("devGo");if(dg)dg.onclick=()=>{commitDev();window.scrollTo({top:0});};
+  const dn=document.getElementById("devNext");if(dn)dn.onclick=()=>{startInterlude("dev");};
+  app.querySelectorAll("[data-resp]").forEach(b=>b.onclick=()=>respond(b.dataset.resp));
+  const en=document.getElementById("evNext");if(en)en.onclick=nextEvent;
+  const ag=document.getElementById("again");if(ag)ag.onclick=()=>{fresh(S.sector,S.diff,S.region,S.name);snap();render();window.scrollTo({top:0});};
+  const mn=document.getElementById("menu");if(mn)mn.onclick=()=>{pickSector=S.sector;pickDiff=S.diff;pickRegion=S.region;pickName=S.name;S=null;render();window.scrollTo({top:0});};
+}
+
+/* first build event auto-mitigation when entering build */
+const _setup=setupEvents;
+setupEvents=function(){_setup();const e=S.events[0];if(e&&e.mit)handleEventMit();else if(e)sfx("alarm");};
+
+render();
+</script>
+
+</body>
+</html>
